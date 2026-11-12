@@ -1,24 +1,40 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
+import { parseScene } from '../core/parseScene'
+import { Editor } from '../editor/Editor'
 import { actionErrorMessage } from '../lib/errors'
-import { getProject, type ProjectRow } from '../lib/projectsApi'
+import { getProject } from '../lib/projectsApi'
+import { useEditorStore } from '../stores/editorStore'
 
 type LoadState =
   | { kind: 'loading' }
   | { kind: 'notFound' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; project: ProjectRow }
+  | { kind: 'ready'; name: string }
 
-/** Project page. In phase 0 it shows only the project name; the editor comes in phase 1. */
+/** Loads the project, validates its scene and opens the editor. */
 export function ProjectPage() {
   const { id = '' } = useParams()
-  const [state, setState] = useState<LoadState>({ kind: 'loading' })
+  // Remembers which project the state belongs to, so switching ids shows "loading" again.
+  const [loaded, setLoaded] = useState<{ id: string; state: LoadState } | null>(null)
+  const state: LoadState = loaded?.id === id ? loaded.state : { kind: 'loading' }
 
   useEffect(() => {
     let cancelled = false
+    const setState = (next: LoadState) => setLoaded({ id, state: next })
     getProject(id)
       .then((project) => {
-        if (!cancelled) setState(project ? { kind: 'ready', project } : { kind: 'notFound' })
+        if (cancelled) return
+        if (!project) return setState({ kind: 'notFound' })
+        const parsed = parseScene(project.scene)
+        if (!parsed.ok) {
+          return setState({
+            kind: 'error',
+            message: `Scene projekta ni mogoče prebrati (${parsed.error}). Podatki v bazi niso bili spremenjeni.`,
+          })
+        }
+        useEditorStore.getState().load(project.id, parsed.scene)
+        setState({ kind: 'ready', name: project.name })
       })
       .catch((err: unknown) => {
         if (!cancelled) {
@@ -33,8 +49,10 @@ export function ProjectPage() {
     }
   }, [id])
 
+  if (state.kind === 'ready') return <Editor key={id} projectId={id} projectName={state.name} />
+
   return (
-    <>
+    <div className="page">
       <p>
         <Link to="/projekti">← Vsi projekti</Link>
       </p>
@@ -45,12 +63,6 @@ export function ProjectPage() {
           {state.message}
         </p>
       )}
-      {state.kind === 'ready' && (
-        <>
-          <h1>{state.project.name}</h1>
-          <p className="muted">Urejevalnik pride v fazi 1.</p>
-        </>
-      )}
-    </>
+    </div>
   )
 }

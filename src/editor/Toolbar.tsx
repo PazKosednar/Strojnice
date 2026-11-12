@@ -1,0 +1,88 @@
+import { useState } from 'react'
+import { Link } from 'react-router'
+import { useEditorStore, type Tool } from '../stores/editorStore'
+import { RectRoomForm } from './RectRoomForm'
+import { SaveStatusIndicator } from './SaveStatusIndicator'
+
+export type ViewMode = '2d' | 'both' | '3d'
+
+const TOOLS: { tool: Tool; label: string }[] = [
+  { tool: 'select', label: 'Izberi' },
+  { tool: 'wall', label: 'Stena' },
+  { tool: 'door', label: 'Vrata' },
+  { tool: 'window', label: 'Okno' },
+  { tool: 'delete', label: 'Briši' },
+]
+
+const VIEWS: { mode: ViewMode; label: string }[] = [
+  { mode: '2d', label: '2D' },
+  { mode: 'both', label: '2D + 3D' },
+  { mode: '3d', label: '3D' },
+]
+
+interface Props {
+  projectName: string
+  viewMode: ViewMode
+  onViewMode: (mode: ViewMode) => void
+}
+
+export function Toolbar({ projectName, viewMode, onViewMode }: Props) {
+  const tool = useEditorStore((s) => s.tool)
+  const setTool = useEditorStore((s) => s.setTool)
+  const canUndo = useEditorStore((s) => s.history.past.length > 0)
+  const canRedo = useEditorStore((s) => s.history.future.length > 0)
+  const undo = useEditorStore((s) => s.undo)
+  const redo = useEditorStore((s) => s.redo)
+  const [roomFormOpen, setRoomFormOpen] = useState(false)
+
+  return (
+    <div className="toolbar-wrap">
+      <div className="toolbar" role="toolbar" aria-label="Orodja">
+        <Link to="/projekti" className="back-link">
+          ← Projekti
+        </Link>
+        <strong className="project-title">{projectName}</strong>
+        <span className="toolbar-sep" />
+        {TOOLS.map((t) => (
+          <button
+            key={t.tool}
+            type="button"
+            aria-pressed={tool === t.tool}
+            onClick={() => setTool(t.tool)}
+          >
+            {t.label}
+          </button>
+        ))}
+        <button
+          type="button"
+          aria-expanded={roomFormOpen}
+          onClick={() => setRoomFormOpen((open) => !open)}
+        >
+          Pravokoten prostor
+        </button>
+        <span className="toolbar-sep" />
+        <button type="button" onClick={undo} disabled={!canUndo} title="Ctrl+Z">
+          Razveljavi
+        </button>
+        <button type="button" onClick={redo} disabled={!canRedo} title="Ctrl+Y">
+          Uveljavi
+        </button>
+        <span className="spacer" />
+        <span className="segmented" role="group" aria-label="Pogled">
+          {VIEWS.map((v) => (
+            <button
+              key={v.mode}
+              type="button"
+              aria-pressed={viewMode === v.mode}
+              onClick={() => onViewMode(v.mode)}
+            >
+              {v.label}
+            </button>
+          ))}
+        </span>
+        <SaveStatusIndicator />
+      </div>
+      {roomFormOpen && <RectRoomForm onDone={() => setRoomFormOpen(false)} />}
+    </div>
+  )
+}

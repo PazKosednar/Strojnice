@@ -40,6 +40,8 @@ button {
 .page {
   padding: 16px;
   max-width: 900px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .page.narrow {
@@ -101,4 +103,269 @@ button.link {
 
 .project-name {
   font-weight: 500;
+}
+
+/* ---- Layout ---- */
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.small {
+  font-size: 0.85em;
+}
+
+/* ---- Editor ---- */
+
+.editor {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 6px 12px;
+  border-bottom: 1px solid #ddd;
+  background: #fafafa;
+}
+
+.toolbar button[aria-pressed='true'] {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.toolbar-sep {
+  width: 1px;
+  height: 22px;
+  background: #ccc;
+  margin: 0 4px;
+}
+
+.project-title {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.segmented {
+  display: inline-flex;
+  gap: 0;
+}
+
+.save-status {
+  min-width: 11em;
+  text-align: right;
+  font-size: 0.9em;
+  color: #0b6b2b;
+}
+
+.save-pending,
+.save-saving {
+  color: #666;
+}
+
+.save-error {
+  color: #b00020;
+}
+
+.rect-room-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid #ddd;
+  background: #f3f6ff;
+}
+
+.rect-room-form label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85em;
+}
+
+.rect-room-form input {
+  width: 7em;
+}
+
+.editor-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: #fde8e8;
+  color: #8a0016;
+  border-bottom: 1px solid #f5c2c7;
+}
+
+.editor-message button {
+  margin-left: auto;
+  padding: 0 8px;
+}
+
+.editor-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.editor-views {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.editor-views.views-both {
+  grid-template-columns: 1fr 1fr;
+}
+
+.editor-pane {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  border-right: 1px solid #ddd;
+  overflow: hidden;
+}
+
+.pane-loading {
+  padding: 12px;
+}
+
+.properties {
+  width: 260px;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  overflow-y: auto;
+  border-left: 1px solid #ddd;
+}
+
+.properties h2 {
+  margin: 4px 0 8px;
+  font-size: 1.1em;
+}
+
+.properties h3 {
+  margin: 12px 0 4px;
+  font-size: 0.95em;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.field label {
+  font-size: 0.9em;
+}
+
+.field-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.field-input input {
+  width: 6.5em;
+  text-align: right;
+}
+
+.unit {
+  color: #666;
+  font-size: 0.85em;
+}
+
+/* ---- 2D plan ---- */
+
+.plan2d {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+}
+
+.plan2d-svg {
+  display: block;
+  touch-action: none;
+  user-select: none;
+  font-size: 12px;
+}
+
+.plan2d-svg.tool-wall,
+.plan2d-svg.tool-door,
+.plan2d-svg.tool-window {
+  cursor: crosshair;
+}
+
+.plan2d-svg.tool-delete {
+  cursor: not-allowed;
+}
+
+.plan-dimensions text {
+  fill: #111827;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 3px;
+}
+
+.endpoint-handle {
+  fill: #fff;
+  stroke: #2563eb;
+  stroke-width: 2;
+  cursor: move;
+}
+
+.draft-label {
+  font-size: 12px;
+}
+
+.plan2d-fit,
+.view3d-reset {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.plan2d-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  margin: 0;
+  max-width: 90%;
+  padding: 2px 8px;
+  font-size: 0.85em;
+  background: #ffffffdd;
+  border-radius: 3px;
+  pointer-events: none;
+  text-align: center;
+}
+
+/* ---- 3D view ---- */
+
+.view3d {
+  position: absolute;
+  inset: 0;
 }

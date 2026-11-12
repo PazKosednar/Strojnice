@@ -17,7 +17,7 @@ export function ProjectsPage() {
   }, [load])
 
   return (
-    <>
+    <div className="page">
       <h1>Projekti</h1>
       <CreateProjectForm onCreate={create} />
       {error && (
@@ -41,6 +41,6 @@ export function ProjectsPage() {
           ))}
         </ul>
       )}
-    </>
+    </div>
   )
 }
