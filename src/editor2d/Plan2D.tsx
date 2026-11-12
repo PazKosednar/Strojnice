@@ -61,7 +61,7 @@ export function Plan2D() {
   const svgRef = useRef<SVGSVGElement>(null)
   const size = useElementSize(containerRef)
 
-  // `view` stays null (auto-fit to the scene) until the user pans or zooms.
+  // Current pan/zoom (UI state only, not geometry).
   const [view, setView] = useState<View | null>(null)
   const [draft, setDraft] = useState<Draft | null>(null)
   const [cursor, setCursor] = useState<SnapResult | null>(null)
@@ -79,13 +79,21 @@ export function Plan2D() {
   }
   const hasWalls = scene.walls.length > 0
   const [prevHasWalls, setPrevHasWalls] = useState(hasWalls)
+  // The view is fitted once (on open, when the first walls appear, or on request) and then
+  // stays fixed, so the plan never moves under the cursor while the user edits.
+  const [fitPending, setFitPending] = useState(true)
   if (prevHasWalls !== hasWalls) {
     setPrevHasWalls(hasWalls)
-    if (hasWalls) setView(null)
+    if (hasWalls) setFitPending(true)
   }
 
   const bounds = useMemo(() => sceneBounds(scene), [scene])
-  const activeView: View | null = view ?? (size ? fitView(bounds, size.width, size.height) : null)
+  let activeView: View | null = view
+  if (size && (fitPending || !view)) {
+    activeView = fitView(bounds, size.width, size.height)
+    setView(activeView)
+    setFitPending(false)
+  }
 
   const local = (e: { clientX: number; clientY: number }): Point => {
     const rect = svgRef.current!.getBoundingClientRect()
@@ -329,7 +337,7 @@ export function Plan2D() {
           <ScaleBar view={activeView} height={size.height} />
         </svg>
       )}
-      <button type="button" className="plan2d-fit" onClick={() => setView(null)}>
+      <button type="button" className="plan2d-fit" onClick={() => setFitPending(true)}>
         Prilagodi pogled
       </button>
       <p className="plan2d-hint">{hint}</p>

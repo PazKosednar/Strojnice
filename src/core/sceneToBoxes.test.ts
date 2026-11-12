@@ -115,3 +115,12 @@ describe('boxesBounds', () => {
     expect(bounds.radius).toBeGreaterThanOrEqual(1.5)
   })
 })
+
+describe('boxesBounds radius', () => {
+  it('is half the diagonal of the bounding box', () => {
+    const bounds = boxesBounds([
+      { key: 'a', kind: 'wall', elementId: 'a', center: [0, 0, 0], size: [2, 2, 2], rotationY: 0 },
+    ])!
+    expect(bounds.radius).toBeCloseTo(Math.sqrt(3))
+  })
+})

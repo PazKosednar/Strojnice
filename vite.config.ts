@@ -3,6 +3,11 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [react()],
+  // Pre-bundle the lazily loaded 3D stack so opening the 3D view does not trigger a
+  // dev-server dependency re-optimisation (which reloads the page).
+  optimizeDeps: {
+    include: ['three', '@react-three/fiber', '@react-three/drei'],
+  },
   test: {
     projects: [
       {

@@ -102,7 +102,7 @@ export function sceneToBoxes(scene: Scene): Box3d[] {
 
 export interface Bounds3d {
   center: Vec3
-  /** Largest extent (m), used to place the camera. */
+  /** Radius of a sphere around the bounding box (half its diagonal, m). */
   radius: number
 }
 
@@ -120,6 +120,6 @@ export function boxesBounds(boxes: readonly Box3d[]): Bounds3d | null {
     }
   }
   const center: Vec3 = [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2]
-  const radius = Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]) / 2
+  const radius = Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]) / 2
   return { center, radius }
 }

@@ -33,6 +33,23 @@ TypeScript je zaklenjen na `~6.0`, ker typescript-eslint še ne podpira TS 7.
 - Izgled je začasen: čist, funkcionalen, brez posebnega oblikovanja.
 - Majhne datoteke z eno odgovornostjo; po vsaki zaključeni nalogi testi in commit.
 
+## Dogovori modela (faza 1)
+
+- **Koordinate tlorisa:** x desno, y v tlorisu navzgor (SVG obrne os y). Višine od tal (0).
+- **3D:** `x → x`, `y tlorisa → −z`, višina → `y`; mm → m samo v `core/sceneToBoxes.ts`.
+- **Stena** je samostojen odsek (`start`, `end`), debelina simetrično okoli osi. Sosednje
+  stene si delijo točno isto koordinato krajišča; premik krajišča premakne vse stene na
+  tej koordinati.
+- **Odprtina:** `offset` je razdalja od začetka stene do **bližjega roba** odprtine.
+  Vrata imajo vedno `sillHeight = 0`.
+- **Nastavitve projekta** (`scene.settings`: debelina/višina stene, mere vrat in okna,
+  korak mreže) so vrednosti za nove elemente, ki jih uporabnik spreminja. Niso standardi.
+- Operacije nad sceno (`core/*Ops.ts`) so čiste funkcije, ki vrnejo `SceneResult`
+  (nova scena ali koda napake); vmesnik kodo prevede v `editor/sceneErrorMessages.ts`.
+- Id-ji se v jedro podajo od zunaj (`IdFactory`), da so funkcije deterministične.
+- Shranjeni JSON se vedno prebere skozi `parseScene()`; neveljaven zapis se zavrne z
+  napako, nikoli tiho ne popravi.
+
 ## Ukazi
 
 | Namen               | Ukaz                   |
@@ -58,8 +75,11 @@ Pred commitom: `npm run lint && npm run typecheck && npm test && npm run build`.
 ```
 src/
   core/        čisto geometrijsko jedro (model scene), brez Reacta/DOM-a
-  lib/         odjemalci in dostop do podatkov (Supabase, API projektov)
-  stores/      Zustand store-i
+  lib/         odjemalci in dostop do podatkov (Supabase, API projektov, autosave)
+  stores/      Zustand store-i (editorStore: scena + undo/redo, izbor, orodje)
+  editor/      urejevalnik: orodna vrstica, plošča lastnosti, bližnjice, shranjevanje
+  editor2d/    2D tloris (SVG): pogled, orodja, sloji
+  view3d/      3D prikaz (React Three Fiber), samo bere sceno iz stora
   components/  skupne React komponente
   pages/       strani (ena datoteka na pot)
   test/        nastavitev testov

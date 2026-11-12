@@ -68,7 +68,16 @@ poveča `version` in doda migracija v `src/core/`.
   projekta (zaenkrat brez urejevalnika)
 - Prazen model scene (`createEmptyScene()`), s katerim se ustvari nov projekt
 
-### Faza 1: projekti + 2D risanje prostora + 3D prikaz
+### Faza 1: projekti + 2D risanje prostora + 3D prikaz (končana)
+
+Izvedeno: model sten in odprtin z nastavitvami projekta, `parseScene`, čiste operacije
+nad sceno, snap (mreža, krajišča, pravi kot), 2D urejevalnik (orodja Izberi/Stena/Vrata/
+Okno/Briši, vtipkana dolžina, pravokoten prostor, vlečenje krajišč, kote, merilo),
+plošča lastnosti, undo/redo, samodejno shranjevanje s ponovnimi poskusi, 3D prikaz z
+izrezanimi odprtinami. Višina prostora je višina posamezne stene. Odprto za kasneje:
+premikanje odprtine z vlečenjem, spajanje stene v sredino druge stene (T-stik).
+
+Prvotni obseg:
 
 - Shranjevanje in nalaganje scene projekta
 - 2D urejevalnik (SVG): risanje sten po merah (vnos dolžin in kotov), debelina sten
