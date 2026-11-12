@@ -55,7 +55,21 @@ export function EquipmentTypeForm({ title, initial, systems, onSave, onCancel }:
   const [draft, setDraft] = useState(initial)
   const [errors, setErrors] = useState<DraftErrors>({})
   const [busy, setBusy] = useState(false)
-  const set = (patch: Partial<TypeDraft>) => setDraft((d) => ({ ...d, ...patch }))
+  const set = (patch: Partial<TypeDraft>) => {
+    setDraft((d) => ({ ...d, ...patch }))
+    // Editing a field clears its message; the whole form is checked again on save.
+    setErrors((current) => {
+      const changed = Object.keys(patch).flatMap((key) =>
+        key === 'clearances' || key === 'ports' ? [`${key}.`] : [key],
+      )
+      const remaining = Object.fromEntries(
+        Object.entries(current).filter(
+          ([key]) => !changed.some((c) => (c.endsWith('.') ? key.startsWith(c) : key === c)),
+        ),
+      )
+      return Object.keys(remaining).length === Object.keys(current).length ? current : remaining
+    })
+  }
 
   const submit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
