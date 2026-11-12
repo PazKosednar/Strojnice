@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { findOpeningAt, findWallAt } from './hitTest'
+import { findEquipmentAt, findOpeningAt, findWallAt } from './hitTest'
 import { createRectangularRoom } from './rectangularRoom'
 import { createEmptyScene, type Scene } from './scene'
+import { cylinderType, equipment } from './testFixtures'
 
 function room(): Scene {
   let n = 0
@@ -47,5 +48,21 @@ describe('findOpeningAt', () => {
 
   it('returns null on a solid part of the wall', () => {
     expect(findOpeningAt(room(), { x: 500, y: 0 }, 0)).toBeNull()
+  })
+})
+
+describe('findEquipmentAt', () => {
+  const items = [
+    equipment({ id: 'a', tag: 'A', position: { x: 0, y: 0 } }),
+    equipment({ id: 'b', tag: 'B', position: { x: 200, y: 0 }, type: cylinderType }),
+  ]
+
+  it('returns the item under the point, preferring the last placed one', () => {
+    expect(findEquipmentAt(items, { x: -250, y: 0 })?.id).toBe('a')
+    expect(findEquipmentAt(items, { x: 100, y: 0 })?.id).toBe('b')
+  })
+
+  it('returns null on empty floor', () => {
+    expect(findEquipmentAt(items, { x: 2000, y: 2000 })).toBeNull()
   })
 })

@@ -10,6 +10,10 @@ const MESSAGES: Record<SceneError, string> = {
   wallTooShort: 'Stena ne sme imeti dolžine 0.',
   invalidValue: 'Vrednost mora biti celo število v mm, večje od 0.',
   openingsDoNotFit: 'Sprememba ni mogoča: odprtine v steni ne bi več imele prostora.',
+  tagEmpty: 'Oznaka naprave ne sme biti prazna.',
+  tagTaken: 'To oznako že ima druga naprava. Oznaka mora biti v projektu enolična.',
+  invalidPlacement: 'Položaj in višina morata biti celi števili v mm (višina od tal vsaj 0).',
+  invalidSystem: 'Sistem mora imeti ime in barvo v obliki #rrggbb.',
 }
 
 /** Slovenian message for a rejected scene edit. */

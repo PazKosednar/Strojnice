@@ -1,4 +1,5 @@
-import type { Opening, Point, Scene, Wall } from './scene'
+import { equipmentFootprint, footprintContains } from './equipmentGeometry'
+import type { Equipment, Opening, Point, Scene, Wall } from './scene'
 import { projectOntoWall } from './wallGeometry'
 
 export interface WallHit {
@@ -40,4 +41,13 @@ export function findOpeningAt(scene: Scene, point: Point, tolerance: number): Op
         hit.along <= o.offset + o.width + tolerance,
     ) ?? null
   )
+}
+
+/** Finds the equipment whose footprint contains the point (the last placed one wins). */
+export function findEquipmentAt(equipment: readonly Equipment[], point: Point): Equipment | null {
+  for (let i = equipment.length - 1; i >= 0; i--) {
+    const item = equipment[i]!
+    if (footprintContains(equipmentFootprint(item), point)) return item
+  }
+  return null
 }
