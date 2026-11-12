@@ -8,7 +8,8 @@ import {
 } from '../lib/equipmentTypesApi'
 import { actionErrorMessage } from '../lib/errors'
 
-type CatalogStatus = 'idle' | 'loading' | 'ready'
+/** 'failed' is kept until the user retries, so a failing load is never repeated in a loop. */
+type CatalogStatus = 'idle' | 'loading' | 'ready' | 'failed'
 
 interface CatalogState {
   status: CatalogStatus
@@ -47,7 +48,7 @@ export const useCatalogStore = create<CatalogState>()((set) => ({
       set({ types: [...catalog.types].sort(byName), invalid: catalog.invalid, status: 'ready' })
     } catch (err) {
       if (started !== epoch) return
-      set({ status: 'idle', error: actionErrorMessage('Kataloga ni bilo mogoče naložiti', err) })
+      set({ status: 'failed', error: actionErrorMessage('Kataloga ni bilo mogoče naložiti', err) })
     }
   },
 

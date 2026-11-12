@@ -99,6 +99,11 @@ export function CatalogPanel() {
           {error}
         </p>
       )}
+      {status === 'failed' && (
+        <button type="button" onClick={() => void load()}>
+          Poskusi znova
+        </button>
+      )}
       {status === 'loading' && <p>Nalaganje …</p>}
       {status === 'ready' && types.length === 0 && (
         <p className="muted">Katalog je prazen. Ustvari prvi tip z gumbom »Nov tip«.</p>

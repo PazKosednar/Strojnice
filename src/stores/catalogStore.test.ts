@@ -30,6 +30,13 @@ describe('catalogStore', () => {
     expect(store().types.map((t) => t.name)).toEqual(['Test box', 'Test cylinder'])
   })
 
+  it('stays failed after a load error instead of going back to idle', async () => {
+    vi.mocked(api.listEquipmentTypes).mockRejectedValue(new Error('no table'))
+    await store().load()
+    expect(store().status).toBe('failed')
+    expect(store().error).toBe('Kataloga ni bilo mogoče naložiti: no table')
+  })
+
   it('adds a saved type and replaces it when saved again', async () => {
     vi.mocked(api.saveEquipmentType).mockResolvedValue(undefined)
     expect(await store().save(boxType)).toBe(true)
