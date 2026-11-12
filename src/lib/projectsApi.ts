@@ -1,4 +1,4 @@
-import { createEmptyScene } from '../core/scene'
+import { createEmptyScene, type Scene } from '../core/scene'
 import type { Database, Json } from './database.types'
 import { getSupabase } from './supabase'
 
@@ -55,4 +55,15 @@ export async function getProject(id: string): Promise<ProjectRow | null> {
     .maybeSingle()
   if (error) throw error
   return data
+}
+
+/** Saves the scene of a project. Throws if the project no longer exists or is not accessible. */
+export async function saveScene(id: string, scene: Scene): Promise<void> {
+  const { data, error } = await getSupabase()
+    .from('projects')
+    .update({ scene: scene as unknown as Json })
+    .eq('id', id)
+    .select('id')
+  if (error) throw error
+  if (data.length === 0) throw new Error('Project not found or not accessible')
 }
