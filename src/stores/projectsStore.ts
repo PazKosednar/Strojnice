@@ -18,7 +18,13 @@ interface ProjectsState {
   rename: (id: string, name: string) => Promise<boolean>
   remove: (id: string) => Promise<boolean>
   clearError: () => void
+  /** Clears all cached projects, e.g. when the signed-in user changes. */
+  reset: () => void
 }
+
+// Incremented by reset(); responses from requests started before a reset are discarded,
+// so a slow request of a previous user can never repopulate the list.
+let epoch = 0
 
 export const useProjectsStore = create<ProjectsState>()((set) => ({
   projects: [],
@@ -26,13 +32,17 @@ export const useProjectsStore = create<ProjectsState>()((set) => ({
   error: null,
 
   load: async () => {
+    const started = epoch
     set({ loading: true, error: null })
     try {
-      set({ projects: await listProjects() })
+      const projects = await listProjects()
+      if (started === epoch) set({ projects })
     } catch (err) {
-      set({ error: actionErrorMessage('Projektov ni bilo mogoče naložiti', err) })
+      if (started === epoch) {
+        set({ error: actionErrorMessage('Projektov ni bilo mogoče naložiti', err) })
+      }
     } finally {
-      set({ loading: false })
+      if (started === epoch) set({ loading: false })
     }
   },
 
@@ -73,4 +83,9 @@ export const useProjectsStore = create<ProjectsState>()((set) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  reset: () => {
+    epoch += 1
+    set({ projects: [], loading: false, error: null })
+  },
 }))
