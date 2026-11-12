@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { parseScene } from './parseScene'
 import { createRectangularRoom } from './rectangularRoom'
 import { createEmptyScene, INITIAL_SETTINGS, type Scene } from './scene'
+import { cylinderType, equipment } from './testFixtures'
 
 function room(): Scene {
   let n = 0
@@ -46,7 +47,7 @@ describe('parseScene', () => {
   it('rejects non-objects and unknown versions', () => {
     expect(errorOf(null)).toBe('scene: expected an object')
     expect(errorOf('hello')).toBe('scene: expected an object')
-    expect(errorOf({ ...(roundTrip(room()) as object), version: 2 })).toMatch(/^version:/)
+    expect(errorOf({ ...(roundTrip(room()) as object), version: 99 })).toMatch(/^version:/)
   })
 
   it('names the offending field', () => {
@@ -77,9 +78,32 @@ describe('parseScene', () => {
     expect(errorOf(json)).toMatch(/duplicate id "w1"/)
   })
 
-  it('rejects equipment and pipes, which are not supported yet', () => {
-    const json = { ...(roundTrip(room()) as object), equipment: [{ id: 'HP-01' }] }
-    expect(errorOf(json)).toBe('equipment: not supported in this version')
+  it('accepts placed equipment and rejects invalid equipment', () => {
+    const scene = { ...room(), equipment: [equipment({ type: cylinderType, tag: 'CYL-01' })] }
+    expect(parseScene(roundTrip(scene))).toEqual({ ok: true, scene })
+
+    const bad = roundTrip(scene) as { equipment: { rotation: number }[] }
+    bad.equipment[0]!.rotation = 360
+    expect(errorOf(bad)).toBe('equipment[0].rotation: expected an integer between 0 and 359')
+  })
+
+  it('rejects duplicate equipment tags', () => {
+    const scene = {
+      ...room(),
+      equipment: [equipment({ id: 'a' }), equipment({ id: 'b' })],
+    }
+    expect(errorOf(roundTrip(scene))).toBe('equipment[1].tag: duplicate tag "IDU-01"')
+  })
+
+  it('validates the systems in settings', () => {
+    const json = roundTrip(room()) as { settings: { systems: { color: string }[] } }
+    json.settings.systems[0]!.color = 'red'
+    expect(errorOf(json)).toMatch(/^settings.systems\[0\].color:/)
+  })
+
+  it('rejects pipes, which are not supported yet', () => {
+    const json = { ...(roundTrip(room()) as object), pipes: [{ id: 'x' }] }
+    expect(errorOf(json)).toBe('pipes: not supported in this version')
   })
 
   it('drops unknown extra fields', () => {

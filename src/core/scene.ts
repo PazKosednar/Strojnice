@@ -10,7 +10,7 @@
  */
 
 /** Current scene schema version. Bump when the stored shape changes. */
-export const SCENE_VERSION = 1
+export const SCENE_VERSION = 2
 
 /** Length unit used throughout the scene. */
 export type SceneUnits = 'mm'
@@ -50,8 +50,85 @@ export interface Opening {
   sillHeight: number
 }
 
-/** Placed equipment item. Defined in phase 2. */
-export type Equipment = Record<string, never>
+/** Medium carried by pipes and ports (e.g. heating flow). Editable per project. */
+export interface SystemDef {
+  /** Stable id; the initial systems use the same ids in every project. */
+  id: string
+  name: string
+  /** Display colour, `#rrggbb`. */
+  color: string
+}
+
+/** Point in equipment-local or world space, integer millimetres. */
+export interface Point3 {
+  x: number
+  y: number
+  z: number
+}
+
+/** Axis direction in which a pipe leaves the equipment (equipment-local axes). */
+export type PortDirection = '+x' | '-x' | '+y' | '-y' | '+z' | '-z'
+
+/**
+ * Connection point on an equipment type. `position` is in equipment-local coordinates:
+ * origin at the centre of the footprint on the bottom face, x = width (to the right when
+ * looking at the front), +y = back, -y = front, z = up.
+ */
+export interface Port {
+  id: string
+  name: string
+  systemId: string
+  position: Point3
+  direction: PortDirection
+  /** Free text from the manufacturer's documentation (e.g. "DN25"); never parsed. */
+  size: string
+}
+
+export type EquipmentShape =
+  | { kind: 'box'; width: number; depth: number; height: number }
+  | { kind: 'cylinder'; diameter: number; height: number }
+
+export type Mounting = 'floor' | 'wall'
+
+/** Required free space around the equipment (mm); 0 = none on that side. */
+export interface Clearances {
+  front: number
+  back: number
+  /** Towards local -x. */
+  left: number
+  /** Towards local +x. */
+  right: number
+  top: number
+}
+
+/** Equipment definition from the user's catalogue. All dimensions are entered by the user. */
+export interface EquipmentType {
+  id: string
+  name: string
+  /** Prefix of automatically assigned tags, e.g. "HP" -> HP-01. */
+  tagPrefix: string
+  shape: EquipmentShape
+  mounting: Mounting
+  ports: Port[]
+  clearances?: Clearances
+}
+
+/**
+ * Equipment placed in the scene. `type` is a COPY of the catalogue type taken at placement,
+ * so later catalogue edits never change an existing project. `tag` is an exact identifier:
+ * unique in the project and never renumbered automatically.
+ */
+export interface Equipment {
+  id: string
+  tag: string
+  type: EquipmentType
+  /** Centre of the footprint in the plan. */
+  position: Point
+  /** Height of the bottom face above the floor. */
+  elevation: number
+  /** Whole degrees, counter-clockwise in the plan, 0-359. At 0 the front faces plan -y. */
+  rotation: number
+}
 
 /** Pipe run between connection points. Defined in phase 3. */
 export type Pipe = Record<string, never>
@@ -74,6 +151,8 @@ export interface SceneSettings {
   window: OpeningPreset
   /** Grid and snap step. */
   gridSize: number
+  /** Media used by ports (and pipes in phase 3). */
+  systems: SystemDef[]
 }
 
 export interface Scene {
@@ -96,6 +175,12 @@ export const INITIAL_SETTINGS: SceneSettings = {
   door: { width: 900, height: 2100, sillHeight: 0 },
   window: { width: 1200, height: 1200, sillHeight: 900 },
   gridSize: 50,
+  systems: [
+    { id: 'supply', name: 'Dvižni vod', color: '#d62728' },
+    { id: 'return', name: 'Povratek', color: '#1f77b4' },
+    { id: 'dhw', name: 'Topla sanitarna voda', color: '#ff7f0e' },
+    { id: 'cold', name: 'Hladna voda', color: '#2ca02c' },
+  ],
 }
 
 /** Returns a deep copy of the initial settings. */
@@ -104,6 +189,7 @@ export function initialSettings(): SceneSettings {
     ...INITIAL_SETTINGS,
     door: { ...INITIAL_SETTINGS.door },
     window: { ...INITIAL_SETTINGS.window },
+    systems: INITIAL_SETTINGS.systems.map((system) => ({ ...system })),
   }
 }
 
