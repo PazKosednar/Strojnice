@@ -1,4 +1,5 @@
 import { validateOpening } from './openingValidation'
+import { withoutPipesAt } from './pipeOps'
 import type { Point, Scene, Wall } from './scene'
 import { fail, isPositiveInt, ok, type SceneResult } from './sceneResult'
 import { pointAtDistance, wallAngle } from './wallGeometry'
@@ -108,12 +109,17 @@ export function updateWall(
   return ok(next)
 }
 
-/** Removes a wall together with all of its openings. */
+/** Removes a wall together with its openings and wall terminals (and their pipes). */
 export function removeWall(scene: Scene, wallId: string): SceneResult {
   if (!scene.walls.some((w) => w.id === wallId)) return fail('notFound')
+  let next = scene
+  for (const t of scene.terminals.filter((t) => t.wallId === wallId)) {
+    next = withoutPipesAt(next, t.id)
+  }
   return ok({
-    ...scene,
-    walls: scene.walls.filter((w) => w.id !== wallId),
-    openings: scene.openings.filter((o) => o.wallId !== wallId),
+    ...next,
+    walls: next.walls.filter((w) => w.id !== wallId),
+    openings: next.openings.filter((o) => o.wallId !== wallId),
+    terminals: next.terminals.filter((t) => t.wallId !== wallId),
   })
 }

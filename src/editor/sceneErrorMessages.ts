@@ -14,6 +14,14 @@ const MESSAGES: Record<SceneError, string> = {
   tagTaken: 'To oznako že ima druga naprava. Oznaka mora biti v projektu enolična.',
   invalidPlacement: 'Položaj in višina morata biti celi števili v mm (višina od tal vsaj 0).',
   invalidSystem: 'Sistem mora imeti ime in barvo v obliki #rrggbb.',
+  pipeSystemMismatch: 'Povezava ni mogoča: oba konca morata pripadati istemu sistemu.',
+  pipeEndInUse: 'Ta priključek oziroma izhod je že povezan. Vsak ima lahko le eno cev.',
+  pipeEndNoDiameter:
+    'Priključek nima vnesenega zunanjega premera cevi. Vnesi ga v lastnostih naprave.',
+  pipeSameEnd: 'Cev ne more imeti obeh koncev na istem mestu.',
+  invalidRoute: 'Trasa mora biti sestavljena iz pravokotnih odsekov v celih mm.',
+  invalidTerminal:
+    'Izhod mora biti na steni (odmik znotraj dolžine stene, višina do višine stene), s sistemom in premerom.',
 }
 
 /** Slovenian message for a rejected scene edit. */

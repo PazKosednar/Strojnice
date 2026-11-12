@@ -22,6 +22,14 @@ export function nextTag(prefix: string, existingTags: readonly string[]): string
   return `${prefix}-${String(highest + 1).padStart(2, '0')}`
 }
 
+/** Everything in a scene that carries a tag; tags are unique across all of it. */
+export function allTags(scene: {
+  equipment: readonly { id: string; tag: string }[]
+  terminals: readonly { id: string; tag: string }[]
+}): { id: string; tag: string }[] {
+  return [...scene.equipment, ...scene.terminals].map(({ id, tag }) => ({ id, tag }))
+}
+
 /** True when no other item (ignoring `exceptId`) uses exactly this tag. */
 export function isTagFree(
   items: readonly { id: string; tag: string }[],

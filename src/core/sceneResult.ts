@@ -20,6 +20,18 @@ export type SceneError =
   | 'invalidPlacement'
   /** System name is empty, its colour is not #rrggbb, or its id is already used. */
   | 'invalidSystem'
+  /** Both ends of a pipe must belong to the same system. */
+  | 'pipeSystemMismatch'
+  /** A port or terminal already has a pipe. */
+  | 'pipeEndInUse'
+  /** A port has no outer diameter yet. */
+  | 'pipeEndNoDiameter'
+  /** A pipe cannot start and end at the same place. */
+  | 'pipeSameEnd'
+  /** A route must consist of integer, axis-parallel segments. */
+  | 'invalidRoute'
+  /** Terminal offset/height/diameter/system is not valid for its wall. */
+  | 'invalidTerminal'
 
 /** Result of a scene operation: a new scene, or the reason it was rejected. */
 export type SceneResult = { ok: true; scene: Scene } | { ok: false; error: SceneError }

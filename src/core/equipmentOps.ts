@@ -1,7 +1,8 @@
 import { footprintSize, normalizeRotation } from './equipmentGeometry'
 import type { Equipment, EquipmentType, Point, Scene } from './scene'
 import { fail, ok, type SceneResult } from './sceneResult'
-import { isTagFree, nextTag } from './tags'
+import { withoutPipesAt } from './pipeOps'
+import { allTags, isTagFree, nextTag } from './tags'
 
 const isInt = (v: number) => Number.isSafeInteger(v)
 const roundPoint = (p: Point): Point => ({ x: Math.round(p.x) + 0, y: Math.round(p.y) + 0 })
@@ -13,7 +14,7 @@ export function cloneEquipmentType(type: EquipmentType): EquipmentType {
 
 function validated(scene: Scene, item: Equipment): SceneResult | Equipment {
   if (item.tag === '' || item.tag !== item.tag.trim()) return fail('tagEmpty')
-  if (!isTagFree(scene.equipment, item.tag, item.id)) return fail('tagTaken')
+  if (!isTagFree(allTags(scene), item.tag, item.id)) return fail('tagTaken')
   if (!isInt(item.position.x) || !isInt(item.position.y)) return fail('invalidPlacement')
   if (!isInt(item.elevation) || item.elevation < 0) return fail('invalidPlacement')
   if (!Number.isInteger(item.rotation) || item.rotation < 0 || item.rotation > 359) {
@@ -35,7 +36,7 @@ export interface NewEquipment {
 
 /** Places equipment. Without a tag it gets `prefix-NN` (see nextTag). */
 export function addEquipment(scene: Scene, input: NewEquipment): SceneResult {
-  const tags = scene.equipment.map((e) => e.tag)
+  const tags = allTags(scene).map((t) => t.tag)
   const item = validated(scene, {
     id: input.id,
     tag: input.tag ?? nextTag(input.type.tagPrefix, tags),
@@ -81,10 +82,14 @@ export function rotateEquipment(scene: Scene, id: string, delta: number): SceneR
   return updateEquipment(scene, id, { rotation: current.rotation + delta })
 }
 
-/** Removes equipment. Tags of the remaining equipment are never changed. */
+/**
+ * Removes equipment together with its pipes. Tags of the remaining equipment are never
+ * changed.
+ */
 export function removeEquipment(scene: Scene, id: string): SceneResult {
   if (!scene.equipment.some((e) => e.id === id)) return fail('notFound')
-  return ok({ ...scene, equipment: scene.equipment.filter((e) => e.id !== id) })
+  const next = withoutPipesAt(scene, id)
+  return ok({ ...next, equipment: next.equipment.filter((e) => e.id !== id) })
 }
 
 /**
