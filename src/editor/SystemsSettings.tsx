@@ -37,7 +37,9 @@ export function SystemsSettings({ systems }: { systems: readonly SystemDef[] }) 
       <button
         type="button"
         onClick={() =>
-          apply((s) => addSystem(s, { id: newId(), name: 'Nov sistem', color: '#7f7f7f' }))
+          apply((s) =>
+            addSystem(s, { id: newId(), name: 'Nov sistem', color: '#7f7f7f', lineStyle: 'solid' }),
+          )
         }
       >
         Dodaj sistem

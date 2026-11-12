@@ -10,7 +10,7 @@
  */
 
 /** Current scene schema version. Bump when the stored shape changes. */
-export const SCENE_VERSION = 2
+export const SCENE_VERSION = 3
 
 /** Length unit used throughout the scene. */
 export type SceneUnits = 'mm'
@@ -51,12 +51,16 @@ export interface Opening {
 }
 
 /** Medium carried by pipes and ports (e.g. heating flow). Editable per project. */
+/** How pipes of a system are drawn in the 2D plan. */
+export type LineStyle = 'solid' | 'dashed' | 'dashdot'
+
 export interface SystemDef {
   /** Stable id; the initial systems use the same ids in every project. */
   id: string
   name: string
   /** Display colour, `#rrggbb`. */
   color: string
+  lineStyle: LineStyle
 }
 
 /** Point in equipment-local or world space, integer millimetres. */
@@ -82,6 +86,11 @@ export interface Port {
   direction: PortDirection
   /** Free text from the manufacturer's documentation (e.g. "DN25"); never parsed. */
   size: string
+  /**
+   * Outer diameter of the connected pipe (mm), entered by the user. Never derived from
+   * `size`. A port without it cannot be connected.
+   */
+  outerDiameter?: number
 }
 
 export type EquipmentShape =
@@ -130,8 +139,46 @@ export interface Equipment {
   rotation: number
 }
 
-/** Pipe run between connection points. Defined in phase 3. */
-export type Pipe = Record<string, never>
+/**
+ * Pipe connection through a wall to a distribution network that is not drawn
+ * (e.g. the building's cold-water main). `offset` is measured along the wall axis from
+ * the wall start, `height` above the floor; the connection point lies on the wall axis.
+ */
+export interface WallTerminal {
+  id: string
+  /** Exact identifier like equipment tags (e.g. IZ-01); unique together with them. */
+  tag: string
+  wallId: string
+  offset: number
+  height: number
+  systemId: string
+  outerDiameter: number
+}
+
+/** One end of a pipe. */
+export type PipeEnd =
+  { kind: 'port'; equipmentId: string; portId: string } | { kind: 'terminal'; terminalId: string }
+
+/** Point in plan coordinates with height (z above the floor), integer millimetres. */
+export type RoutePoint = Point3
+
+/**
+ * Pipe between two ends of the same system. `route` runs from `from` to `to` and contains
+ * only the corner points of axis-parallel segments; it is empty when no route was found
+ * (`routeError` says why). 'auto' pipes are re-routed when their ends move, 'manual'
+ * pipes are never changed automatically.
+ */
+export interface Pipe {
+  id: string
+  systemId: string
+  from: PipeEnd
+  to: PipeEnd
+  outerDiameter: number
+  route: RoutePoint[]
+  mode: 'auto' | 'manual'
+  /** Slovenian reason shown when automatic routing failed. */
+  routeError?: string
+}
 
 /** Size used for newly placed openings of one type. */
 export interface OpeningPreset {
@@ -151,8 +198,14 @@ export interface SceneSettings {
   window: OpeningPreset
   /** Grid and snap step. */
   gridSize: number
-  /** Media used by ports (and pipes in phase 3). */
+  /** Media used by ports and pipes. */
   systems: SystemDef[]
+  /** Step of the 3D grid used by automatic routing. */
+  routingGrid: number
+  /** Straight run of a pipe out of a port / into a port before the first bend. */
+  portStraight: number
+  /** Clear gap between the outer surfaces of neighbouring pipes. */
+  pipeSpacing: number
 }
 
 export interface Scene {
@@ -162,6 +215,7 @@ export interface Scene {
   walls: Wall[]
   openings: Opening[]
   equipment: Equipment[]
+  terminals: WallTerminal[]
   pipes: Pipe[]
 }
 
@@ -176,11 +230,14 @@ export const INITIAL_SETTINGS: SceneSettings = {
   window: { width: 1200, height: 1200, sillHeight: 900 },
   gridSize: 50,
   systems: [
-    { id: 'supply', name: 'Dvižni vod', color: '#d62728' },
-    { id: 'return', name: 'Povratek', color: '#1f77b4' },
-    { id: 'dhw', name: 'Topla sanitarna voda', color: '#ff7f0e' },
-    { id: 'cold', name: 'Hladna voda', color: '#2ca02c' },
+    { id: 'supply', name: 'Dvižni vod', color: '#d62728', lineStyle: 'solid' },
+    { id: 'return', name: 'Povratek', color: '#1f77b4', lineStyle: 'dashed' },
+    { id: 'dhw', name: 'Topla sanitarna voda', color: '#ff7f0e', lineStyle: 'dashdot' },
+    { id: 'cold', name: 'Hladna voda', color: '#2ca02c', lineStyle: 'solid' },
   ],
+  routingGrid: 50,
+  portStraight: 100,
+  pipeSpacing: 50,
 }
 
 /** Returns a deep copy of the initial settings. */
@@ -202,6 +259,7 @@ export function createEmptyScene(settings: SceneSettings = initialSettings()): S
     walls: [],
     openings: [],
     equipment: [],
+    terminals: [],
     pipes: [],
   }
 }

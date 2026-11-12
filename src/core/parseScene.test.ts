@@ -101,9 +101,82 @@ describe('parseScene', () => {
     expect(errorOf(json)).toMatch(/^settings.systems\[0\].color:/)
   })
 
-  it('rejects pipes, which are not supported yet', () => {
-    const json = { ...(roundTrip(room()) as object), pipes: [{ id: 'x' }] }
-    expect(errorOf(json)).toBe('pipes: not supported in this version')
+  it('accepts terminals and pipes and checks their references', () => {
+    const scene: Scene = {
+      ...room(),
+      equipment: [equipment({ type: cylinderType, tag: 'CYL-01' })],
+      terminals: [
+        {
+          id: 't1',
+          tag: 'IZ-01',
+          wallId: 'w2',
+          offset: 900,
+          height: 300,
+          systemId: 'dhw',
+          outerDiameter: 22,
+        },
+      ],
+      pipes: [
+        {
+          id: 'p1',
+          systemId: 'dhw',
+          from: { kind: 'port', equipmentId: 'e1', portId: 'top' },
+          to: { kind: 'terminal', terminalId: 't1' },
+          outerDiameter: 22,
+          route: [
+            { x: 0, y: 0, z: 1500 },
+            { x: 0, y: 0, z: 1600 },
+            { x: 3200, y: 0, z: 1600 },
+          ],
+          mode: 'auto',
+        },
+      ],
+    }
+    expect(parseScene(roundTrip(scene))).toEqual({ ok: true, scene })
+
+    const unknownTerminal = roundTrip(scene) as { pipes: { to: { terminalId: string } }[] }
+    unknownTerminal.pipes[0]!.to.terminalId = 'nope'
+    expect(errorOf(unknownTerminal)).toBe('pipes[0].to: unknown terminal "nope"')
+
+    const diagonal = roundTrip(scene) as { pipes: { route: { x: number }[] }[] }
+    diagonal.pipes[0]!.route[2]!.x = 3100
+    diagonal.pipes[0]!.route[1]!.x = 50
+    expect(errorOf(diagonal)).toBe('pipes[0].route[1]: segments must be axis-parallel')
+  })
+
+  it('rejects two pipes on one end and a terminal tag that equals an equipment tag', () => {
+    const base: Scene = {
+      ...room(),
+      equipment: [equipment({ type: cylinderType, tag: 'CYL-01' })],
+      terminals: [
+        {
+          id: 't1',
+          tag: 'CYL-01',
+          wallId: 'w2',
+          offset: 900,
+          height: 300,
+          systemId: 'dhw',
+          outerDiameter: 22,
+        },
+      ],
+    }
+    expect(errorOf(roundTrip(base))).toBe('terminals[0].tag: duplicate tag "CYL-01"')
+
+    const pipe = (id: string) => ({
+      id,
+      systemId: 'dhw',
+      from: { kind: 'port' as const, equipmentId: 'e1', portId: 'top' },
+      to: { kind: 'terminal' as const, terminalId: 't1' },
+      outerDiameter: 22,
+      route: [],
+      mode: 'auto' as const,
+    })
+    const twice = {
+      ...base,
+      terminals: [{ ...base.terminals[0]!, tag: 'IZ-01' }],
+      pipes: [pipe('a'), pipe('b')],
+    }
+    expect(errorOf(roundTrip(twice))).toBe('pipes[1].from: end already has a pipe')
   })
 
   it('drops unknown extra fields', () => {

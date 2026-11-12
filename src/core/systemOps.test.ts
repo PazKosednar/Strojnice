@@ -12,6 +12,7 @@ describe('systemOps', () => {
       id: 'supply',
       name: 'Ogrevanje',
       color: '#aa0000',
+      lineStyle: 'solid',
     })
   })
 
@@ -30,9 +31,16 @@ describe('systemOps', () => {
 
   it('adds a system and rejects a duplicate id', () => {
     const scene = createEmptyScene()
-    const added = addSystem(scene, { id: 'gas', name: 'Plin', color: '#ffcc00' })
+    const added = addSystem(scene, {
+      id: 'gas',
+      name: 'Plin',
+      color: '#ffcc00',
+      lineStyle: 'solid',
+    })
     expect(added.ok && added.scene.settings.systems).toHaveLength(5)
-    expect(addSystem(scene, { id: 'supply', name: 'X', color: '#000000' })).toEqual({
+    expect(
+      addSystem(scene, { id: 'supply', name: 'X', color: '#000000', lineStyle: 'solid' }),
+    ).toEqual({
       ok: false,
       error: 'invalidSystem',
     })

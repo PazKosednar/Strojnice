@@ -27,7 +27,7 @@ function shape(value: unknown, path: string): EquipmentShape {
 function port(value: unknown, path: string): Port {
   const o = obj(value, path)
   const position = obj(o.position, `${path}.position`)
-  return {
+  const result: Port = {
     id: str(o.id, `${path}.id`),
     name: str(o.name, `${path}.name`),
     systemId: str(o.systemId, `${path}.systemId`),
@@ -39,6 +39,10 @@ function port(value: unknown, path: string): Port {
     direction: oneOf(o.direction, `${path}.direction`, PORT_DIRECTIONS),
     size: text(o.size, `${path}.size`),
   }
+  if (o.outerDiameter !== undefined && o.outerDiameter !== null) {
+    result.outerDiameter = int(o.outerDiameter, `${path}.outerDiameter`, 1)
+  }
+  return result
 }
 
 function clearances(value: unknown, path: string): Clearances {
