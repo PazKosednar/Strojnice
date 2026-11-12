@@ -2,6 +2,7 @@ import type { Session } from '@supabase/supabase-js'
 import { create } from 'zustand'
 import { authErrorMessage } from '../lib/authErrors'
 import { getSupabase } from '../lib/supabase'
+import { useCatalogStore } from './catalogStore'
 import { useProjectsStore } from './projectsStore'
 
 export type AuthStatus = 'loading' | 'signedIn' | 'signedOut'
@@ -28,7 +29,10 @@ function sessionState(session: Session | null) {
 export const useAuthStore = create<AuthState>()((set, get) => {
   /** Stores the session; drops other users' cached data when the signed-in user changes. */
   const applySession = (session: Session | null) => {
-    if (get().session?.user.id !== session?.user.id) useProjectsStore.getState().reset()
+    if (get().session?.user.id !== session?.user.id) {
+      useProjectsStore.getState().reset()
+      useCatalogStore.getState().reset()
+    }
     set(sessionState(session))
   }
 

@@ -33,6 +33,33 @@ export interface Database {
         }
         Relationships: []
       }
+      equipment_types: {
+        Row: {
+          id: string
+          owner_id: string
+          name: string
+          definition: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          owner_id?: string
+          name: string
+          definition: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          owner_id?: string
+          name?: string
+          definition?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<never, never>
     Functions: Record<never, never>
