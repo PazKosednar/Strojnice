@@ -50,6 +50,35 @@ TypeScript je zaklenjen na `~6.0`, ker typescript-eslint še ne podpira TS 7.
 - Shranjeni JSON se vedno prebere skozi `parseScene()`; neveljaven zapis se zavrne z
   napako, nikoli tiho ne popravi.
 
+## Dogovori modela (faza 2: naprave)
+
+- **Lokalne koordinate naprave:** izhodišče v središču tlorisa na spodnjem robu; x = širina
+  (desno, gledano od spredaj), **+y = hrbet, −y = sprednja stran**, z navzgor. Valj ima
+  širino in globino enako premeru.
+- **`rotation`:** cele stopinje, v tlorisu proti urinemu kazalcu, 0–359. Pri 0 je sprednja
+  stran obrnjena proti −y tlorisa.
+- **`Equipment.type` je kopija** tipa iz kataloga ob postavitvi. Urejanje kataloga nikoli
+  ne spremeni obstoječega projekta.
+- **Oznaka (`tag`)** je točen identifikator: enolična v projektu, primerja se znak za znak,
+  nikoli se ne preštevilči. Nova oznaka je `predpona-NN` s številko za najvišjo že
+  uporabljeno (sproščene številke se ne uporabijo znova, dokler obstaja višja).
+- **Sistemi** so v `scene.settings.systems`. Začetni štirje imajo stalne id-je (`supply`,
+  `return`, `dhw`, `cold`), enake v vseh projektih, ker je katalog skupen vsem projektom.
+  Priključek z neznanim sistemom se nariše sivo in sproži opozorilo.
+- **Snap na steno:** hrbet naprave se prisloni na lice stene (os ± debelina/2) na strani
+  kazalca, rotacija se poravna s steno. Pri poševni steni se rotacija zaokroži na cele
+  stopinje, razdalja pa izbere tako, da tloris ne sega v steno.
+- **Trki in odmiki so opozorila, ne blokade** (`core/sceneWarnings.ts`). Dotik in prekrivanje
+  do 1 mm ne štejeta. Stena šteje kot polna do svoje višine (odprtine se ne upoštevajo).
+  Cona odmika je kvader ob vsaki strani naprave v njeni višini, `top` nad njo.
+- **Predloge tipov** (`catalog/templates.ts`) določajo samo obliko, predpono in montažo.
+  Mer, priključkov in odmikov ne vsebujejo; vnese jih uporabnik.
+- **Verzija scene:** `SCENE_VERSION = 2`. Starejše scene nadgradi `core/sceneMigrations.ts`
+  (klicano iz `parseScene`). Vsaka sprememba shranjene oblike dobi novo verzijo, korak
+  migracije in test.
+- **Katalog** je tabela `equipment_types` (na uporabnika, RLS). `definition` se ob branju
+  validira (`parseEquipmentType`); neberljiv zapis se prikaže kot napaka, ne uporabi.
+
 ## Ukazi
 
 | Namen               | Ukaz                   |
@@ -76,8 +105,9 @@ Pred commitom: `npm run lint && npm run typecheck && npm test && npm run build`.
 src/
   core/        čisto geometrijsko jedro (model scene), brez Reacta/DOM-a
   lib/         odjemalci in dostop do podatkov (Supabase, API projektov, autosave)
-  stores/      Zustand store-i (editorStore: scena + undo/redo, izbor, orodje)
-  editor/      urejevalnik: orodna vrstica, plošča lastnosti, bližnjice, shranjevanje
+  stores/      Zustand store-i (editorStore: scena + undo/redo, izbor, orodje; catalogStore)
+  editor/      urejevalnik: orodna vrstica, stranska plošča, bližnjice, shranjevanje
+  catalog/     katalog naprav: predloge, obrazec tipa s predogledom, plošča
   editor2d/    2D tloris (SVG): pogled, orodja, sloji
   view3d/      3D prikaz (React Three Fiber), samo bere sceno iz stora
   components/  skupne React komponente

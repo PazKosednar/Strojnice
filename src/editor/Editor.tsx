@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from 'react'
 import { Plan2D } from '../editor2d/Plan2D'
 import { useEditorStore } from '../stores/editorStore'
-import { PropertiesPanel } from './PropertiesPanel'
+import { SidePanel } from './SidePanel'
 import { Toolbar, type ViewMode } from './Toolbar'
 import { useEditorShortcuts } from './useEditorShortcuts'
 import { useSceneAutosave } from './useSceneAutosave'
@@ -14,7 +14,7 @@ interface Props {
   projectName: string
 }
 
-/** Project editor: toolbar, 2D plan, 3D view and properties panel. */
+/** Project editor: toolbar, 2D plan, 3D view and the side panel. */
 export function Editor({ projectId, projectName }: Props) {
   const message = useEditorStore((s) => s.message)
   const setMessage = useEditorStore((s) => s.setMessage)
@@ -48,7 +48,7 @@ export function Editor({ projectId, projectName }: Props) {
             </section>
           )}
         </div>
-        <PropertiesPanel />
+        <SidePanel />
       </div>
     </div>
   )

@@ -1,13 +1,15 @@
 import { useEffect } from 'react'
+import { removeEquipment, rotateEquipment } from '../core/equipmentOps'
 import { removeOpening } from '../core/openingOps'
 import { removeWall } from '../core/wallOps'
 import { useEditorStore } from '../stores/editorStore'
+import { duplicateSelected } from './equipmentActions'
 
 const isTyping = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
   (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')
 
-/** Ctrl+Z / Ctrl+Y (Ctrl+Shift+Z), Delete and Esc for the editor. */
+/** Ctrl+Z / Ctrl+Y (Ctrl+Shift+Z), Delete, Esc; R and Ctrl+D for the selected equipment. */
 export function useEditorShortcuts() {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -25,7 +27,20 @@ export function useEditorShortcuts() {
       } else if (e.key === 'Delete' && store.selection) {
         e.preventDefault()
         const { kind, id } = store.selection
-        store.apply((s) => (kind === 'wall' ? removeWall(s, id) : removeOpening(s, id)))
+        store.apply((s) =>
+          kind === 'wall'
+            ? removeWall(s, id)
+            : kind === 'opening'
+              ? removeOpening(s, id)
+              : removeEquipment(s, id),
+        )
+      } else if (mod && key === 'd' && store.selection?.kind === 'equipment') {
+        e.preventDefault()
+        duplicateSelected(store.selection.id)
+      } else if (!mod && !e.altKey && key === 'r' && store.selection?.kind === 'equipment') {
+        e.preventDefault()
+        const { id } = store.selection
+        store.apply((s) => rotateEquipment(s, id, 90))
       } else if (e.key === 'Escape') {
         store.select(null)
         store.setTool('select')

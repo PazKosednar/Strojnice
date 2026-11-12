@@ -38,15 +38,18 @@ Brskalnik
 
 Supabase
 ├─ Auth (e-pošta + geslo)
-└─ Postgres: projects(id, owner_id, name, scene jsonb, created_at, updated_at) + RLS
+└─ Postgres + RLS:
+   ├─ projects(id, owner_id, name, scene jsonb, created_at, updated_at)
+   └─ equipment_types(id, owner_id, name, definition jsonb, created_at, updated_at)
 ```
 
 ### Model scene (izhodišče)
 
 ```ts
 interface Scene {
-  version: number // verzija sheme, za migracije modela
+  version: number // verzija sheme, za migracije modela (trenutno 2)
   units: 'mm'
+  settings: SceneSettings // privzete mere novih elementov, mreža, sistemi
   walls: Wall[]
   openings: Opening[] // vrata, okna
   equipment: Equipment[]
@@ -87,7 +90,16 @@ Prvotni obseg:
 - 3D prikaz istega modela (React Three Fiber), orbit kamera
 - Razveljavi/uveljavi (undo/redo)
 
-### Faza 2: parametrični katalog naprav
+### Faza 2: parametrični katalog naprav (končana)
+
+Izvedeno: sistemi v nastavitvah projekta, tipi naprav (kvader/valj, montaža, priključki,
+odmiki) v katalogu uporabnika (tabela `equipment_types`), postavljanje s snapom na lice
+stene, premikanje, vrtenje, podvajanje, oznake (`HP-01` ...), opozorila za trke, kršene
+odmike in neznane sisteme, prikaz naprav s priključki v 2D in 3D, scena verzije 2 z
+migracijo iz verzije 1. Odprto za kasneje: urejanje mer že postavljene naprave (zdaj:
+uredi tip v katalogu in postavi znova), upoštevanje odprtin pri trkih, vogalne cone odmikov.
+
+Prvotni obseg:
 
 - Naprave kot parametrična telesa: kvader ali valj z merami, ki jih vnese uporabnik
 - Priključki na napravi: položaj, smer, dimenzija in sistem:

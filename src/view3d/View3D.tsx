@@ -1,9 +1,12 @@
 import { Edges, OrbitControls } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { useMemo, useState } from 'react'
+import { equipmentTo3d } from '../core/equipmentTo3d'
 import { sceneToBoxes } from '../core/sceneToBoxes'
+import { equipmentWithConflicts, sceneWarnings } from '../core/sceneWarnings'
 import { selectScene, useEditorStore } from '../stores/editorStore'
 import { CameraRig } from './CameraRig'
+import { Equipment3D } from './Equipment3D'
 
 const COLORS = {
   wall: '#d9d6cf',
@@ -13,13 +16,15 @@ const COLORS = {
 }
 
 /**
- * 3D view of the scene in the editor store. Pure projection: it derives boxes from the
+ * 3D view of the scene in the editor store. Pure projection: it derives primitives from the
  * scene on every change and holds no geometry state of its own. Editing is 2D-only.
  */
 export default function View3D() {
   const scene = useEditorStore(selectScene)
   const selection = useEditorStore((s) => s.selection)
   const boxes = useMemo(() => sceneToBoxes(scene), [scene])
+  const equipment = useMemo(() => equipmentTo3d(scene), [scene])
+  const conflicts = useMemo(() => equipmentWithConflicts(sceneWarnings(scene)), [scene])
   const [resetToken, setResetToken] = useState(0)
 
   return (
@@ -47,6 +52,14 @@ export default function View3D() {
             </mesh>
           )
         })}
+        {equipment.map((item) => (
+          <Equipment3D
+            key={item.id}
+            item={item}
+            selected={selection?.kind === 'equipment' && selection.id === item.id}
+            conflict={conflicts.has(item.id)}
+          />
+        ))}
         <OrbitControls makeDefault enableDamping={false} />
         <CameraRig boxes={boxes} resetToken={resetToken} />
       </Canvas>

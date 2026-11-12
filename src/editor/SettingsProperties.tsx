@@ -2,6 +2,7 @@ import type { OpeningPreset, SceneSettings } from '../core/scene'
 import { updateSettings } from '../core/settingsOps'
 import { useEditorStore } from '../stores/editorStore'
 import { NumberField } from './NumberField'
+import { SystemsSettings } from './SystemsSettings'
 
 /** Project settings: values used for newly created walls and openings. */
 export function SettingsProperties({ settings }: { settings: SceneSettings }) {
@@ -60,6 +61,7 @@ export function SettingsProperties({ settings }: { settings: SceneSettings }) {
         value={settings.gridSize}
         onCommit={(v) => set({ gridSize: v })}
       />
+      <SystemsSettings systems={settings.systems} />
     </>
   )
 }

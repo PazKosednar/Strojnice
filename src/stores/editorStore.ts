@@ -1,13 +1,13 @@
 import { create } from 'zustand'
-import { createEmptyScene, type Scene } from '../core/scene'
+import { createEmptyScene, type EquipmentType, type Scene } from '../core/scene'
 import type { SceneResult } from '../core/sceneResult'
 import type { SaveStatus } from '../lib/autosave'
 import { sceneErrorMessage } from '../editor/sceneErrorMessages'
 import { createHistory, pushHistory, redo, replacePresent, undo, type History } from './history'
 
-export type Tool = 'select' | 'wall' | 'door' | 'window' | 'delete'
+export type Tool = 'select' | 'wall' | 'door' | 'window' | 'equipment' | 'delete'
 
-export type Selection = { kind: 'wall' | 'opening'; id: string } | null
+export type Selection = { kind: 'wall' | 'opening' | 'equipment'; id: string } | null
 
 export type SceneOp = (scene: Scene) => SceneResult
 
@@ -19,6 +19,10 @@ interface EditorState {
   /** Slovenian message about the last rejected edit. */
   message: string | null
   saveStatus: SaveStatus
+  /** Catalogue type the equipment tool places (UI state, not part of the scene). */
+  placingType: EquipmentType | null
+  /** Whether clearance zones are drawn in the plan. */
+  showClearances: boolean
 
   load: (projectId: string, scene: Scene) => void
   /** Applies an edit as one undo step. Returns false (and sets `message`) if rejected. */
@@ -34,6 +38,9 @@ interface EditorState {
   setTool: (tool: Tool) => void
   setMessage: (message: string | null) => void
   setSaveStatus: (status: SaveStatus) => void
+  /** Activates the equipment tool for a catalogue type. */
+  startPlacing: (type: EquipmentType) => void
+  setShowClearances: (show: boolean) => void
 }
 
 let gestureBase: Scene | null = null
@@ -41,7 +48,8 @@ let gestureBase: Scene | null = null
 /** Drops the selection if the selected element no longer exists. */
 function validSelection(scene: Scene, selection: Selection): Selection {
   if (!selection) return null
-  const list = selection.kind === 'wall' ? scene.walls : scene.openings
+  const lists = { wall: scene.walls, opening: scene.openings, equipment: scene.equipment }
+  const list: readonly { id: string }[] = lists[selection.kind]
   return list.some((e) => e.id === selection.id) ? selection : null
 }
 
@@ -71,6 +79,8 @@ export const useEditorStore = create<EditorState>()((set, get) => {
     tool: 'select',
     message: null,
     saveStatus: 'saved',
+    placingType: null,
+    showClearances: true,
 
     load: (projectId, scene) => {
       gestureBase = null
@@ -81,6 +91,7 @@ export const useEditorStore = create<EditorState>()((set, get) => {
         tool: 'select',
         message: null,
         saveStatus: 'saved',
+        placingType: null,
       })
     },
     apply: (op) => run(op, true),
@@ -102,6 +113,9 @@ export const useEditorStore = create<EditorState>()((set, get) => {
     setTool: (tool) => set({ tool, message: null }),
     setMessage: (message) => set({ message }),
     setSaveStatus: (saveStatus) => set({ saveStatus }),
+    startPlacing: (placingType) =>
+      set({ placingType, tool: 'equipment', selection: null, message: null }),
+    setShowClearances: (showClearances) => set({ showClearances }),
   }
 })
 

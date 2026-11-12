@@ -11,7 +11,6 @@ const TOOLS: { tool: Tool; label: string }[] = [
   { tool: 'wall', label: 'Stena' },
   { tool: 'door', label: 'Vrata' },
   { tool: 'window', label: 'Okno' },
-  { tool: 'delete', label: 'Briši' },
 ]
 
 const VIEWS: { mode: ViewMode; label: string }[] = [
@@ -33,6 +32,9 @@ export function Toolbar({ projectName, viewMode, onViewMode }: Props) {
   const canRedo = useEditorStore((s) => s.history.future.length > 0)
   const undo = useEditorStore((s) => s.undo)
   const redo = useEditorStore((s) => s.redo)
+  const placingType = useEditorStore((s) => s.placingType)
+  const showClearances = useEditorStore((s) => s.showClearances)
+  const setShowClearances = useEditorStore((s) => s.setShowClearances)
   const [roomFormOpen, setRoomFormOpen] = useState(false)
 
   return (
@@ -55,6 +57,22 @@ export function Toolbar({ projectName, viewMode, onViewMode }: Props) {
         ))}
         <button
           type="button"
+          aria-pressed={tool === 'equipment'}
+          disabled={!placingType}
+          title={
+            placingType
+              ? `Postavi: ${placingType.name}`
+              : 'Najprej v katalogu izberi tip (gumb »Postavi«)'
+          }
+          onClick={() => setTool('equipment')}
+        >
+          Naprava
+        </button>
+        <button type="button" aria-pressed={tool === 'delete'} onClick={() => setTool('delete')}>
+          Briši
+        </button>
+        <button
+          type="button"
           aria-expanded={roomFormOpen}
           onClick={() => setRoomFormOpen((open) => !open)}
         >
@@ -67,6 +85,14 @@ export function Toolbar({ projectName, viewMode, onViewMode }: Props) {
         <button type="button" onClick={redo} disabled={!canRedo} title="Ctrl+Y">
           Uveljavi
         </button>
+        <label className="toggle">
+          <input
+            type="checkbox"
+            checked={showClearances}
+            onChange={(e) => setShowClearances(e.target.checked)}
+          />
+          Odmiki
+        </label>
         <span className="spacer" />
         <span className="segmented" role="group" aria-label="Pogled">
           {VIEWS.map((v) => (
