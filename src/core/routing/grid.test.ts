@@ -40,6 +40,20 @@ describe('buildGrid', () => {
   it('gives up beyond the maximum step', () => {
     expect(buildGrid(bounds, 100, none, 10, 200)).toBeNull()
   })
+
+  it('rejects huge or non-finite bounds without building anything', () => {
+    const huge = { ...bounds, minX: -1e15, maxX: 1e15 }
+    const started = Date.now()
+    expect(buildGrid(huge, 50, none, 600_000, 200)).toBeNull()
+    expect(Date.now() - started).toBeLessThan(100)
+    expect(buildGrid({ ...bounds, maxZ: Infinity }, 50, none, 600_000, 200)).toBeNull()
+    expect(buildGrid(bounds, NaN, none, 600_000, 200)).toBeNull()
+    expect(buildGrid({ ...bounds, minX: 2000 }, 50, none, 600_000, 200)).toBeNull()
+  })
+
+  it('stops the coordinate loop where the step no longer changes the value', () => {
+    expect(axisCoords(2 ** 53, 2 ** 53 + 10, 1, []).length).toBeLessThan(20)
+  })
 })
 
 describe('MinHeap', () => {

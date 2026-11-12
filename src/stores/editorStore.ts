@@ -7,7 +7,10 @@ import { createHistory, pushHistory, redo, replacePresent, undo, type History } 
 
 export type Tool = 'select' | 'wall' | 'door' | 'window' | 'equipment' | 'delete'
 
-export type Selection = { kind: 'wall' | 'opening' | 'equipment'; id: string } | null
+export type Selection = {
+  kind: 'wall' | 'opening' | 'equipment' | 'terminal' | 'pipe'
+  id: string
+} | null
 
 export type SceneOp = (scene: Scene) => SceneResult
 
@@ -48,7 +51,13 @@ let gestureBase: Scene | null = null
 /** Drops the selection if the selected element no longer exists. */
 function validSelection(scene: Scene, selection: Selection): Selection {
   if (!selection) return null
-  const lists = { wall: scene.walls, opening: scene.openings, equipment: scene.equipment }
+  const lists = {
+    wall: scene.walls,
+    opening: scene.openings,
+    equipment: scene.equipment,
+    terminal: scene.terminals,
+    pipe: scene.pipes,
+  }
   const list: readonly { id: string }[] = lists[selection.kind]
   return list.some((e) => e.id === selection.id) ? selection : null
 }

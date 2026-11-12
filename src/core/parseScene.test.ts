@@ -50,6 +50,12 @@ describe('parseScene', () => {
     expect(errorOf({ ...(roundTrip(room()) as object), version: 99 })).toMatch(/^version:/)
   })
 
+  it('rejects coordinates beyond 10 km', () => {
+    const json = roundTrip(room()) as { walls: { end: { x: number } }[] }
+    json.walls[0]!.end.x = 1e12
+    expect(errorOf(json)).toBe('walls[0].end.x: expected an integer between -10000000 and 10000000')
+  })
+
   it('names the offending field', () => {
     const json = roundTrip(room()) as { walls: { thickness: unknown }[] }
     json.walls[1]!.thickness = 12.5

@@ -20,10 +20,13 @@ export function int(value: unknown, path: string, min: number, max = Infinity): 
   return value
 }
 
-/** Any (safe) integer, negative included. */
+/** Largest accepted coordinate magnitude (mm): 10 km, far beyond any plant room. */
+export const MAX_COORDINATE = 10_000_000
+
+/** Integer coordinate (negative included) within ±MAX_COORDINATE. */
 export function coord(value: unknown, path: string): number {
-  if (typeof value !== 'number' || !Number.isSafeInteger(value)) {
-    throw new SceneFormatError(`${path}: expected an integer`)
+  if (typeof value !== 'number' || !Number.isInteger(value) || Math.abs(value) > MAX_COORDINATE) {
+    throw new SceneFormatError(`${path}: expected an integer between -10000000 and 10000000`)
   }
   return value
 }
