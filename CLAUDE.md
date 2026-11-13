@@ -73,7 +73,7 @@ TypeScript je zaklenjen na `~6.0`, ker typescript-eslint še ne podpira TS 7.
   Cona odmika je kvader ob vsaki strani naprave v njeni višini, `top` nad njo.
 - **Predloge tipov** (`catalog/templates.ts`) določajo samo obliko, predpono in montažo.
   Mer, priključkov in odmikov ne vsebujejo; vnese jih uporabnik.
-- **Verzija scene:** `SCENE_VERSION = 3`. Starejše scene nadgradi `core/sceneMigrations.ts`
+- **Verzija scene:** `SCENE_VERSION = 4`. Starejše scene nadgradi `core/sceneMigrations.ts`
   (klicano iz `parseScene`). Vsaka sprememba shranjene oblike dobi novo verzijo, korak
   migracije in test.
 - **Katalog** je tabela `equipment_types` (na uporabnika, RLS). `definition` se ob branju
@@ -99,6 +99,19 @@ TypeScript je zaklenjen na `~6.0`, ker typescript-eslint še ne podpira TS 7.
 - **Preboji sten** se ne shranjujejo: vedno se izračunajo iz trase (`wallCrossings`).
 - **Čist 3D pogled:** pravilo je čista funkcija `core/wallVisibility.ts` (zunanja normala,
   prag s histerezo, pogled od zgoraj); uporablja se v `useFrame` brez pisanja v store.
+
+## Dogovori modela (3D modeli proizvajalcev)
+
+- Tip naprave ima lahko neobvezen **model** (`EquipmentType.model`, glTF binary `.glb`).
+  Datoteka je v zasebnem vedru Supabase `equipment-models` pod
+  `<id uporabnika>/<id tipa>/<ime>.glb`; vsak uporabnik dostopa samo do svoje mape.
+- Model je **samo slika** v 3D: mere, priključki in odmiki veljajo iz tipa. Mere modela se
+  le ponudijo v obrazcu (»Prevzemi mere iz modela«), shranijo se šele, ko jih uporabnik
+  potrdi s shranjevanjem tipa.
+- `model.bounds` (mm, osi modela: x desno, y gor, z proti gledalcu) se izmerijo ob nalaganju;
+  `model.rotation` (0/90/180/270) obrne model, da je njegova sprednja stran spredaj.
+- Datoteka ostane v shrambi tudi, ko se tip izbriše iz kataloga (postavljene naprave v
+  projektih jo še uporabljajo).
 
 ## Ukazi
 

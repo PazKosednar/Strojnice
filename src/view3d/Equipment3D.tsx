@@ -2,6 +2,7 @@ import { Edges } from '@react-three/drei'
 import { useMemo } from 'react'
 import { Quaternion, Vector3 } from 'three'
 import type { Equipment3d, Port3d } from '../core/equipmentTo3d'
+import { ModelMesh } from './ModelMesh'
 import { TagLabel } from './TagLabel'
 
 const COLORS = {
@@ -39,17 +40,43 @@ interface Props {
 /** One placed equipment item: body in true dimensions, port stubs and the tag label. */
 export function Equipment3D({ item, selected, conflict, hiddenSystems }: Props) {
   const color = conflict ? COLORS.conflict : selected ? COLORS.selected : COLORS.body
+  const geometry =
+    item.shape.kind === 'box' ? (
+      <boxGeometry args={item.shape.size} />
+    ) : (
+      <cylinderGeometry args={[item.shape.radius, item.shape.radius, item.shape.height, 40]} />
+    )
+  const body = (
+    <mesh position={item.center} rotation-y={item.rotationY}>
+      {geometry}
+      <meshStandardMaterial color={color} roughness={0.75} />
+      <Edges color={COLORS.edges} />
+    </mesh>
+  )
   return (
     <group>
-      <mesh position={item.center} rotation-y={item.rotationY}>
-        {item.shape.kind === 'box' ? (
-          <boxGeometry args={item.shape.size} />
-        ) : (
-          <cylinderGeometry args={[item.shape.radius, item.shape.radius, item.shape.height, 40]} />
-        )}
-        <meshStandardMaterial color={color} roughness={0.75} />
-        <Edges color={COLORS.edges} />
-      </mesh>
+      {item.model ? (
+        <>
+          <ModelMesh
+            path={item.model.path}
+            base={item.model.base}
+            equipmentRotationY={item.rotationY}
+            modelRotationY={item.model.rotationY}
+            offset={item.model.offset}
+            fallback={body}
+          />
+          {(selected || conflict) && (
+            // Outline of the type dimensions, so selection and conflicts stay visible.
+            <mesh position={item.center} rotation-y={item.rotationY}>
+              {geometry}
+              <meshBasicMaterial visible={false} />
+              <Edges color={conflict ? '#dc2626' : '#2563eb'} lineWidth={2} />
+            </mesh>
+          )}
+        </>
+      ) : (
+        body
+      )}
       {item.ports
         .filter((port) => !hiddenSystems.includes(port.systemId))
         .map((port) => (

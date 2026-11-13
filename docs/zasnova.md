@@ -147,10 +147,15 @@ Prvotni obseg:
 - Izvoz PDF in PNG
 - Popis: dolžine cevi po sistemih in dimenzijah, število kolen, seznam naprav
 
+### Modeli proizvajalcev (prestavljeno iz faze 5, izvedeno)
+
+Tip naprave ima lahko 3D model `.glb` (npr. Viessmann Vitocal 250-A), ki se v 3D nariše
+namesto kvadra ali valja. Shranjen je v zasebni shrambi Supabase. Mere modela se ponudijo
+v obrazcu tipa, priključke in odmike vnese uporabnik.
+
 ### Faza 5 (kasneje)
 
 - Uvoz 3D skena prostora (GLB/USDZ)
-- Modeli proizvajalcev (namesto parametričnih teles)
 - Samodejna razporeditev naprav
 - iOS aplikacija za LiDAR skeniranje
 

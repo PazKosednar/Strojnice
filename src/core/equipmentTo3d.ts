@@ -1,4 +1,5 @@
 import { equipmentHeight, footprintSize, portWorld } from './equipmentGeometry'
+import { modelOffset } from './modelDimensions'
 import type { Scene } from './scene'
 import type { Vec3 } from './sceneToBoxes'
 
@@ -31,6 +32,12 @@ export interface Equipment3d {
   ports: Port3d[]
   /** Where the tag label is anchored (just above the top face). */
   labelPosition: Vec3
+  /**
+   * Manufacturer model drawn instead of the box/cylinder: placed at `base` (bottom centre
+   * of the equipment, m), turned with the equipment, then by `rotationY` (radians) and
+   * moved by `offset` (m) so the model's bottom centre sits at the base.
+   */
+  model?: { path: string; base: Vec3; rotationY: number; offset: Vec3 }
 }
 
 const MM = 1 / 1000
@@ -78,6 +85,18 @@ export function equipmentTo3d(scene: Scene): Equipment3d[] {
       rotationY: (item.rotation * Math.PI) / 180,
       ports,
       labelPosition: [x * MM + 0, (item.elevation + height) * MM + LABEL_GAP, -y * MM + 0],
+      ...(item.type.model
+        ? {
+            model: {
+              path: item.type.model.path,
+              base: toWorld(x, y, item.elevation),
+              rotationY: (item.type.model.rotation * Math.PI) / 180,
+              offset: ((o) => [o.x * MM + 0, o.y * MM + 0, o.z * MM + 0] as Vec3)(
+                modelOffset(item.type.model.bounds),
+              ),
+            },
+          }
+        : {}),
     }
   })
 }

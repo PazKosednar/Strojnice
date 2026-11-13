@@ -66,3 +66,27 @@ describe('equipmentTo3d', () => {
     expect(item!.labelPosition[1]).toBeLessThan(2.3)
   })
 })
+
+describe('equipmentTo3d with a manufacturer model', () => {
+  it('places the model at the bottom centre with its own rotation and offset', () => {
+    const model = {
+      path: '11111111-2222-3333-4444-555555555555/66666666-7777-8888-9999-000000000000/a.glb',
+      fileName: 'a.glb',
+      rotation: 90 as const,
+      bounds: { min: { x: -100, y: 20, z: -50 }, max: { x: 300, y: 820, z: 50 } },
+    }
+    const [item] = equipmentTo3d(
+      sceneWith(
+        equipment({ position: { x: 1000, y: 2000 }, elevation: 1200, type: { ...boxType, model } }),
+      ),
+    )
+    expect(item!.model!.path).toBe(model.path)
+    close(item!.model!.base, [1, 1.2, -2])
+    expect(item!.model!.rotationY).toBeCloseTo(Math.PI / 2)
+    close(item!.model!.offset, [-0.1, -0.02, 0])
+  })
+
+  it('has no model when the type has none', () => {
+    expect(equipmentTo3d(sceneWith(equipment()))[0]!.model).toBeUndefined()
+  })
+})
