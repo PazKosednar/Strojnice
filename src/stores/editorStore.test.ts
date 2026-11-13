@@ -60,4 +60,33 @@ describe('editorStore', () => {
     store().apply((s) => removeWall(s, 'w2'))
     expect(store().selection).toBeNull()
   })
+
+  it('amends the current step without a new undo step', () => {
+    addRoom()
+    const steps = store().history.past.length
+    expect(store().amend((s) => setWallLength(s, 'w1', 3300))).toBe(true)
+    expect(store().history.past).toHaveLength(steps)
+    expect(scene().walls[0]!.end.x).toBe(3300)
+    // Undo reverts the amended change together with the step it belongs to.
+    store().undo()
+    expect(scene().walls).toHaveLength(0)
+  })
+
+  it('ignores a failing amend silently', () => {
+    addRoom()
+    const before = scene()
+    expect(store().amend((s) => setWallLength(s, 'w1', 0))).toBe(false)
+    expect(scene()).toBe(before)
+    expect(store().message).toBeNull()
+  })
+
+  it('toggles systems in the legend', () => {
+    store().toggleSystem('cold')
+    store().toggleSystem('dhw')
+    expect(store().hiddenSystems).toEqual(['cold', 'dhw'])
+    store().toggleSystem('cold')
+    expect(store().hiddenSystems).toEqual(['dhw'])
+    store().showAllSystems()
+    expect(store().hiddenSystems).toEqual([])
+  })
 })

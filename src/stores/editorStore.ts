@@ -5,7 +5,11 @@ import type { SaveStatus } from '../lib/autosave'
 import { sceneErrorMessage } from '../editor/sceneErrorMessages'
 import { createHistory, pushHistory, redo, replacePresent, undo, type History } from './history'
 
-export type Tool = 'select' | 'wall' | 'door' | 'window' | 'equipment' | 'delete'
+export type Tool =
+  'select' | 'wall' | 'door' | 'window' | 'equipment' | 'pipe' | 'terminal' | 'delete'
+
+/** How the 3D view treats walls between the camera and the room. */
+export type WallViewMode = 'hide' | 'transparent' | 'all'
 
 export type Selection = {
   kind: 'wall' | 'opening' | 'equipment' | 'terminal' | 'pipe'
@@ -26,6 +30,13 @@ interface EditorState {
   placingType: EquipmentType | null
   /** Whether clearance zones are drawn in the plan. */
   showClearances: boolean
+  /** Systems switched off in the legend (hidden in 2D and 3D; UI state only). */
+  hiddenSystems: string[]
+  wallViewMode: WallViewMode
+  /** Automatic routing progress: `done` of `total` pipes; total 0 = idle. */
+  routing: { done: number; total: number }
+  /** Incremented to ask for re-routing all automatic pipes. */
+  rerouteAllRequest: number
 
   load: (projectId: string, scene: Scene) => void
   /** Applies an edit as one undo step. Returns false (and sets `message`) if rejected. */
@@ -34,6 +45,11 @@ interface EditorState {
   beginGesture: () => void
   /** Applies a live edit during a gesture without recording a step. */
   preview: (op: SceneOp) => boolean
+  /**
+   * Adds a derived change (e.g. a computed pipe route) to the current step without a new
+   * undo step, so undo reverts it together with the edit that caused it. Silent on error.
+   */
+  amend: (op: SceneOp) => boolean
   endGesture: () => void
   undo: () => void
   redo: () => void
@@ -44,6 +60,11 @@ interface EditorState {
   /** Activates the equipment tool for a catalogue type. */
   startPlacing: (type: EquipmentType) => void
   setShowClearances: (show: boolean) => void
+  toggleSystem: (systemId: string) => void
+  showAllSystems: () => void
+  setWallViewMode: (mode: WallViewMode) => void
+  setRouting: (done: number, total: number) => void
+  rerouteAll: () => void
 }
 
 let gestureBase: Scene | null = null
@@ -90,6 +111,10 @@ export const useEditorStore = create<EditorState>()((set, get) => {
     saveStatus: 'saved',
     placingType: null,
     showClearances: true,
+    hiddenSystems: [],
+    wallViewMode: 'hide',
+    routing: { done: 0, total: 0 },
+    rerouteAllRequest: 0,
 
     load: (projectId, scene) => {
       gestureBase = null
@@ -101,6 +126,8 @@ export const useEditorStore = create<EditorState>()((set, get) => {
         message: null,
         saveStatus: 'saved',
         placingType: null,
+        hiddenSystems: [],
+        routing: { done: 0, total: 0 },
       })
     },
     apply: (op) => run(op, true),
@@ -108,6 +135,16 @@ export const useEditorStore = create<EditorState>()((set, get) => {
       gestureBase = get().history.present
     },
     preview: (op) => run(op, false),
+    amend: (op) => {
+      const { history, selection } = get()
+      const result = op(history.present)
+      if (!result.ok) return false
+      set({
+        history: replacePresent(history, result.scene),
+        selection: validSelection(result.scene, selection),
+      })
+      return true
+    },
     endGesture: () => {
       const base = gestureBase
       gestureBase = null
@@ -125,6 +162,16 @@ export const useEditorStore = create<EditorState>()((set, get) => {
     startPlacing: (placingType) =>
       set({ placingType, tool: 'equipment', selection: null, message: null }),
     setShowClearances: (showClearances) => set({ showClearances }),
+    toggleSystem: (systemId) =>
+      set((s) => ({
+        hiddenSystems: s.hiddenSystems.includes(systemId)
+          ? s.hiddenSystems.filter((id) => id !== systemId)
+          : [...s.hiddenSystems, systemId],
+      })),
+    showAllSystems: () => set({ hiddenSystems: [] }),
+    setWallViewMode: (wallViewMode) => set({ wallViewMode }),
+    setRouting: (done, total) => set({ routing: { done, total } }),
+    rerouteAll: () => set((s) => ({ rerouteAllRequest: s.rerouteAllRequest + 1 })),
   }
 })
 
