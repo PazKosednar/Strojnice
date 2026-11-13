@@ -1,3 +1,4 @@
+import { ROUTING_LIMITS } from '../core/routing/costs'
 import type { RouteOutcome } from '../core/routing/routePipe'
 import type { Scene } from '../core/scene'
 import type { RouteMessage, RouteRequest } from './protocol'
@@ -36,7 +37,8 @@ export interface RoutingClient {
  * are reported as timed out.
  */
 export function createRoutingClient(options: RoutingClientOptions): RoutingClient {
-  const watchdogMs = options.watchdogMs ?? 5000
+  // A rip-up may route one pipe twice before the next message (each within its budget).
+  const watchdogMs = options.watchdogMs ?? ROUTING_LIMITS.timeBudgetMs * 3 + 2000
   const setTimer = options.setTimer ?? ((cb, ms) => setTimeout(cb, ms))
   const clearTimer = options.clearTimer ?? ((h) => clearTimeout(h as ReturnType<typeof setTimeout>))
 
@@ -77,7 +79,10 @@ export function createRoutingClient(options: RoutingClientOptions): RoutingClien
     const created = options.createWorker()
     created.onmessage = ({ data }) => {
       if (data.jobId !== jobId) return
-      if (data.type === 'result') {
+      if (data.type === 'progress') {
+        options.onProgress(data.done, data.total)
+        armWatchdog()
+      } else if (data.type === 'result') {
         remaining = remaining.filter((id) => id !== data.pipeId)
         options.onResult(data.pipeId, data.outcome)
         options.onProgress(total - remaining.length, total)
