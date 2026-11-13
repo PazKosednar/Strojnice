@@ -157,8 +157,20 @@ ročnih). `verticalOrder` pri speljevanju upošteva le že speljane cevi drugega
 Priključki zunanje enote Vitocal 250-A so pod enoto, obrnjeni navzdol; ker enota stoji
 na tleh, trasa iz njih ne obstaja (odprto vprašanje: podstavek ali prehod v tla).
 
-**DEL B (naslednji):** ključi povezav na priključkih, predlog parov, skupno speljevanje
-(vrstni red, vzporedni pari, rip-up and reroute) v Web Workerju, predogled in potrditev.
+**DEL B (izveden): samodejno povezovanje in skupno speljevanje.** Priključki imajo
+neobvezen ključ povezave in tok (scena verzije 6); javni katalog poveže primarni krog
+Vitocal 250-A. Gumb »Samodejno poveži in spelji« predlaga pare (ključ / edini kandidat /
+nejasno z izbiro), izbrane spelje skupaj v Web Workerju (napredek, preklic): največji krog
+najprej, dvižni in povratni vod istega kroga tečeta vzporedno na stalnem razmiku, cev brez
+poti umakne cevi iz iste serije, ki ji jo zapirajo (rip-up and reroute). Predogled je v 2D
+in 3D prosojen, tabela pred / po (dolžina, kolena, preboji, kršitve), sprejem vseh ali
+izbranih je en korak razveljavitve. Isto skupno speljevanje teče ob premiku naprav in
+spremembi pravil. Priključki zunanje enote (navzdol, 67 mm nad tlemi) se speljejo pod
+enoto. Postavljeno napravo je mogoče posodobiti iz javnega kataloga.
+
+Omejitve: `verticalOrder` pri skupnem speljevanju velja glede na že speljano cev; če je
+dvižni vod speljan pri tleh, se povratek umakne (ne more pod njega). Vrstni red sistemov v
+krogu je vrstni red v nastavitvah projekta.
 
 ### Faza 4: dokumentacija in izvoz
 

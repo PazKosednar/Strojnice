@@ -73,7 +73,7 @@ TypeScript je zaklenjen na `~6.0`, ker typescript-eslint še ne podpira TS 7.
   Cona odmika je kvader ob vsaki strani naprave v njeni višini, `top` nad njo.
 - **Predloge tipov** (`catalog/templates.ts`) določajo samo obliko, predpono in montažo.
   Mer, priključkov in odmikov ne vsebujejo; vnese jih uporabnik.
-- **Verzija scene:** `SCENE_VERSION = 5`. Starejše scene nadgradi `core/sceneMigrations.ts`
+- **Verzija scene:** `SCENE_VERSION = 6`. Starejše scene nadgradi `core/sceneMigrations.ts`
   (klicano iz `parseScene`). Vsaka sprememba shranjene oblike dobi novo verzijo, korak
   migracije in test.
 - **Katalog** je tabela `equipment_types` (na uporabnika, RLS). `definition` se ob branju
@@ -135,7 +135,22 @@ TypeScript je zaklenjen na `~6.0`, ker typescript-eslint še ne podpira TS 7.
   lastni nastavek prost (priključki proizvajalca so lahko bližje od razmika med cevmi).
 - Sprememba ovir, con, pravil ali nastavitev znova spelje vse samodejne cevi.
 - Uteži so v `ROUTING_COSTS` (`avoidZoneFactor`, `preferredZoneFactor`, `softRuleFactor`,
-  `softCrossingPenalty`); so nastavitve aplikacije, ne predpisi.
+  `softCrossingPenalty`, `parallelFactor`); so nastavitve aplikacije, ne predpisi.
+- **Ključ povezave** (`Port.connectionKey` + `flow: 'out' | 'in'`, scena v6) je točen
+  identifikator. `proposeConnections` predlaga pare: ključ (ven → noter, različni napravi,
+  isti sistem), edini kandidat (brez ključa: drug drugemu edini prosti priključek istega
+  sistema in premera) ali nejasno (izbere uporabnik). Nič se ne poveže brez potrditve.
+- **Skupno speljevanje** `core/routing/routeAll.ts`: vrstni red (največji krog, pari, sistem,
+  oznaka; determinističen), druga cev kroga (iste dve napravi) ima nagrado ob prvi na
+  razmiku `r1 + r2 + pipeSpacing` (mreža dobi ravnine točno na tem razmiku), rip-up and
+  reroute (`ripUpRounds`, `batchBudgetMs` v `ROUTING_LIMITS`). Uporablja ga tudi samodejno
+  ponovno speljevanje. Ročne cevi se ne spremenijo.
+- **Priključek navzdol tik nad tlemi:** navpični raven odsek se konča pri tleh (os en polmer
+  nad tlemi), pod takim priključkom je lastna naprava za to cev prehodna.
+- **Predogled** »Samodejno poveži in spelji« (`stores/autoConnectStore.ts`) je ločen od scene;
+  sprejem je en korak razveljavitve, zavrnitev sceno pusti nespremenjeno.
+- Postavljena naprava ima kopijo tipa; »Posodobi iz javnega kataloga« jo zamenja samo na
+  zahtevo uporabnika (`replaceEquipmentType`, cevi na izginulih priključkih odpadejo).
 
 ## Dogovori modela (javni katalog)
 
