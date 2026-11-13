@@ -19,7 +19,12 @@ export function updateSettings(scene: Scene, patch: Partial<SceneSettings>): Sce
     !isPositiveInt(settings.wallHeight) ||
     !isPositiveInt(settings.gridSize) ||
     !validPreset(settings.door) ||
-    !validPreset(settings.window)
+    !validPreset(settings.window) ||
+    !isPositiveInt(settings.routingGrid) ||
+    !Number.isInteger(settings.portStraight) ||
+    settings.portStraight < 0 ||
+    !Number.isInteger(settings.pipeSpacing) ||
+    settings.pipeSpacing < 0
   ) {
     return fail('invalidValue')
   }

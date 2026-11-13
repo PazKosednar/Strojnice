@@ -693,3 +693,82 @@ select[aria-invalid='true'] {
   gap: 8px;
   margin-top: 12px;
 }
+
+/* ---- Pipes (phase 3) ---- */
+
+.toolbar-secondary {
+  padding: 4px 12px;
+  background: #fff;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.legend button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  font-size: 0.85em;
+}
+
+.legend button[aria-pressed='true'] {
+  background: #eef4ff;
+  border-color: #2563eb;
+}
+
+.legend-item.off {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.routing-status {
+  font-size: 0.85em;
+  color: #92400e;
+}
+
+.route-vertex {
+  fill: #fff;
+  stroke: #2563eb;
+  stroke-width: 2;
+  cursor: pointer;
+}
+
+.route-vertex.selected {
+  fill: #2563eb;
+}
+
+.terminal-tag {
+  font-size: 11px;
+  font-weight: 600;
+  fill: #111827;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 3px;
+  pointer-events: none;
+}
+
+.end-dim {
+  opacity: 0.25;
+}
+
+.end-target circle,
+.end-target rect {
+  stroke: #111827;
+  stroke-width: 2;
+}
+
+.swatch.inline {
+  display: inline-block;
+  vertical-align: middle;
+  margin-top: 0;
+}
+
+.plan2d-svg.tool-pipe,
+.plan2d-svg.tool-terminal {
+  cursor: crosshair;
+}

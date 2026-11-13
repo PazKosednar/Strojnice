@@ -6,6 +6,7 @@ import {
 } from '../core/equipmentOps'
 import { UNKNOWN_SYSTEM_COLOR } from '../core/equipmentTo3d'
 import type { Equipment, SystemDef } from '../core/scene'
+import { setPortDiameter } from '../core/pipeOps'
 import { useEditorStore } from '../stores/editorStore'
 import { duplicateSelected } from './equipmentActions'
 import { NumberField } from './NumberField'
@@ -83,6 +84,7 @@ export function EquipmentProperties({ equipment, systems }: Props) {
       </dl>
       <p className="muted small">
         Mere so kopija tipa ob postavitvi. Spremeniš jih v katalogu in napravo postaviš znova.
+        Zunanji premer cevi na priključku vneseš tukaj (velja za to napravo v projektu).
       </p>
 
       <h3>Priključki ({type.ports.length})</h3>
@@ -105,6 +107,14 @@ export function EquipmentProperties({ equipment, systems }: Props) {
                     {system?.name ?? 'neznan sistem'} · ({port.position.x}, {port.position.y},{' '}
                     {port.position.z}) · {port.direction.replace('-', '−')}
                   </span>
+                  {port.outerDiameter === undefined && (
+                    <span className="error small"> Manjka zunanji premer cevi.</span>
+                  )}
+                  <NumberField
+                    label={`Zunanji premer ${port.name}`}
+                    value={port.outerDiameter ?? null}
+                    onCommit={(d) => apply((s) => setPortDiameter(s, equipment.id, port.id, d))}
+                  />
                 </span>
               </li>
             )

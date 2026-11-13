@@ -7,7 +7,9 @@ import {
 } from '../core/equipmentGeometry'
 import { UNKNOWN_SYSTEM_COLOR } from '../core/equipmentTo3d'
 import type { Equipment, Scene } from '../core/scene'
+import { pipeEndKey } from '../core/pipeEnds'
 import type { Selection } from '../stores/editorStore'
+import type { EndState } from './endStates'
 import { toSvgPoints } from './svgPoints'
 import { worldToScreen, type View } from './viewport'
 
@@ -32,6 +34,9 @@ interface ShapeProps {
   showClearances?: boolean
   /** Placement preview: drawn translucent and ignored by tests/selection. */
   ghost?: boolean
+  /** Drawing state of ports (pipe tool, missing diameter), keyed by pipeEndKey. */
+  endStates?: ReadonlyMap<string, EndState>
+  hiddenSystems?: readonly string[]
 }
 
 /** One equipment item in the plan: clearance zones, outline, front edge, ports and tag. */
@@ -43,6 +48,8 @@ export function EquipmentShape({
   conflict = false,
   showClearances = false,
   ghost = false,
+  endStates,
+  hiddenSystems = [],
 }: ShapeProps) {
   const footprint = equipmentFootprint(equipment)
   const stroke = conflict ? COLORS.conflict : selected ? COLORS.selected : COLORS.stroke
@@ -98,11 +105,21 @@ export function EquipmentShape({
       )}
       <polyline points={toSvgPoints(view, frontLine)} stroke={stroke} strokeWidth={3} />
       {equipment.type.ports.map((port) => {
+        if (hiddenSystems.includes(port.systemId)) return null
         const { position, direction } = portWorld(equipment, port)
         const p = worldToScreen(view, position)
         const color = systemColors.get(port.systemId) ?? UNKNOWN_SYSTEM_COLOR
+        const state =
+          endStates?.get(
+            pipeEndKey({ kind: 'port', equipmentId: equipment.id, portId: port.id }),
+          ) ?? 'normal'
         return (
-          <g key={port.id}>
+          <g
+            key={port.id}
+            className={`end-${state}`}
+            data-port={`${equipment.id}:${port.id}`}
+            data-state={state}
+          >
             {(direction.x !== 0 || direction.y !== 0) && (
               <line
                 x1={p.x}
@@ -113,7 +130,26 @@ export function EquipmentShape({
                 strokeWidth={3}
               />
             )}
-            <circle cx={p.x} cy={p.y} r={4} fill={color} stroke="#fff" strokeWidth={1} />
+            {state === 'missing' ? (
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={4}
+                fill="#fff"
+                stroke={color}
+                strokeWidth={2}
+                strokeDasharray="2 2"
+              />
+            ) : (
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={state === 'target' || state === 'source' ? 6 : 4}
+                fill={color}
+                stroke="#fff"
+                strokeWidth={1}
+              />
+            )}
           </g>
         )
       })}
@@ -138,10 +174,20 @@ interface Props {
   /** Ids of equipment involved in collisions or clearance violations. */
   conflicts: ReadonlySet<string>
   showClearances: boolean
+  endStates: ReadonlyMap<string, EndState>
+  hiddenSystems: readonly string[]
 }
 
 /** All placed equipment. */
-export function PlanEquipment({ scene, view, selection, conflicts, showClearances }: Props) {
+export function PlanEquipment({
+  scene,
+  view,
+  selection,
+  conflicts,
+  showClearances,
+  endStates,
+  hiddenSystems,
+}: Props) {
   const systemColors = new Map(scene.settings.systems.map((s) => [s.id, s.color]))
   return (
     <g>
@@ -154,6 +200,8 @@ export function PlanEquipment({ scene, view, selection, conflicts, showClearance
           selected={selection?.kind === 'equipment' && selection.id === equipment.id}
           conflict={conflicts.has(equipment.id)}
           showClearances={showClearances}
+          endStates={endStates}
+          hiddenSystems={hiddenSystems}
         />
       ))}
     </g>

@@ -18,6 +18,19 @@ export type Selection = {
 
 export type SceneOp = (scene: Scene) => SceneResult
 
+/** Part of the selected pipe being edited (UI state). */
+export interface PipeEdit {
+  segment: number | null
+  vertex: number | null
+}
+
+/** Values the terminal tool uses for the next wall terminal (entered by the user). */
+export interface TerminalDraft {
+  systemId: string
+  height: number | null
+  outerDiameter: number | null
+}
+
 interface EditorState {
   projectId: string | null
   history: History<Scene>
@@ -37,6 +50,8 @@ interface EditorState {
   routing: { done: number; total: number }
   /** Incremented to ask for re-routing all automatic pipes. */
   rerouteAllRequest: number
+  pipeEdit: PipeEdit
+  terminalDraft: TerminalDraft
 
   load: (projectId: string, scene: Scene) => void
   /** Applies an edit as one undo step. Returns false (and sets `message`) if rejected. */
@@ -65,6 +80,8 @@ interface EditorState {
   setWallViewMode: (mode: WallViewMode) => void
   setRouting: (done: number, total: number) => void
   rerouteAll: () => void
+  setPipeEdit: (edit: PipeEdit) => void
+  setTerminalDraft: (draft: Partial<TerminalDraft>) => void
 }
 
 let gestureBase: Scene | null = null
@@ -115,6 +132,8 @@ export const useEditorStore = create<EditorState>()((set, get) => {
     wallViewMode: 'hide',
     routing: { done: 0, total: 0 },
     rerouteAllRequest: 0,
+    pipeEdit: { segment: null, vertex: null },
+    terminalDraft: { systemId: 'cold', height: null, outerDiameter: null },
 
     load: (projectId, scene) => {
       gestureBase = null
@@ -155,7 +174,8 @@ export const useEditorStore = create<EditorState>()((set, get) => {
     },
     undo: () => travel(undo),
     redo: () => travel(redo),
-    select: (selection) => set({ selection, message: null }),
+    select: (selection) =>
+      set({ selection, message: null, pipeEdit: { segment: null, vertex: null } }),
     setTool: (tool) => set({ tool, message: null }),
     setMessage: (message) => set({ message }),
     setSaveStatus: (saveStatus) => set({ saveStatus }),
@@ -172,6 +192,8 @@ export const useEditorStore = create<EditorState>()((set, get) => {
     setWallViewMode: (wallViewMode) => set({ wallViewMode }),
     setRouting: (done, total) => set({ routing: { done, total } }),
     rerouteAll: () => set((s) => ({ rerouteAllRequest: s.rerouteAllRequest + 1 })),
+    setPipeEdit: (pipeEdit) => set({ pipeEdit }),
+    setTerminalDraft: (draft) => set((s) => ({ terminalDraft: { ...s.terminalDraft, ...draft } })),
   }
 })
 

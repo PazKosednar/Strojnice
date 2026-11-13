@@ -61,6 +61,26 @@ export function SettingsProperties({ settings }: { settings: SceneSettings }) {
         value={settings.gridSize}
         onCommit={(v) => set({ gridSize: v })}
       />
+      <h3>Cevi</h3>
+      <NumberField
+        label="Razmik med cevmi"
+        value={settings.pipeSpacing}
+        onCommit={(v) => set({ pipeSpacing: v })}
+      />
+      <NumberField
+        label="Raven odsek ob priključku"
+        value={settings.portStraight}
+        onCommit={(v) => set({ portStraight: v })}
+      />
+      <NumberField
+        label="Korak mreže speljevanja"
+        value={settings.routingGrid}
+        onCommit={(v) => set({ routingGrid: v })}
+      />
+      <p className="muted small">
+        Začetne vrednosti niso iz standarda: vpiši razmik po izolaciji in projektni dokumentaciji.
+        Večji korak mreže pomeni hitrejše, a manj natančno speljevanje.
+      </p>
       <SystemsSettings systems={settings.systems} />
     </>
   )

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState } from 'react'
 import { Plan2D } from '../editor2d/Plan2D'
+import { useAutoRouting } from '../routing/useAutoRouting'
 import { useEditorStore } from '../stores/editorStore'
 import { SidePanel } from './SidePanel'
 import { Toolbar, type ViewMode } from './Toolbar'
@@ -21,6 +22,7 @@ export function Editor({ projectId, projectName }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>('both')
   useEditorShortcuts()
   useSceneAutosave(projectId)
+  useAutoRouting()
 
   return (
     <div className="editor">

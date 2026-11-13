@@ -1,6 +1,9 @@
 import { useEffect } from 'react'
 import { removeEquipment, rotateEquipment } from '../core/equipmentOps'
 import { removeOpening } from '../core/openingOps'
+import { removePipe } from '../core/pipeOps'
+import { editPipeRoute, removeVertex } from '../core/routeEdit'
+import { removeTerminal } from '../core/terminalOps'
 import { removeWall } from '../core/wallOps'
 import { useEditorStore } from '../stores/editorStore'
 import { duplicateSelected } from './equipmentActions'
@@ -27,13 +30,28 @@ export function useEditorShortcuts() {
       } else if (e.key === 'Delete' && store.selection) {
         e.preventDefault()
         const { kind, id } = store.selection
-        store.apply((s) =>
-          kind === 'wall'
-            ? removeWall(s, id)
-            : kind === 'opening'
-              ? removeOpening(s, id)
-              : removeEquipment(s, id),
-        )
+        const vertex = store.pipeEdit.vertex
+        if (kind === 'pipe' && vertex !== null) {
+          // Delete removes the selected route vertex, not the whole pipe.
+          if (store.apply((s) => editPipeRoute(s, id, (route) => removeVertex(route, vertex)))) {
+            store.setPipeEdit({ segment: null, vertex: null })
+          }
+          return
+        }
+        store.apply((s) => {
+          switch (kind) {
+            case 'wall':
+              return removeWall(s, id)
+            case 'opening':
+              return removeOpening(s, id)
+            case 'pipe':
+              return removePipe(s, id)
+            case 'terminal':
+              return removeTerminal(s, id)
+            default:
+              return removeEquipment(s, id)
+          }
+        })
       } else if (mod && key === 'd' && store.selection?.kind === 'equipment') {
         e.preventDefault()
         duplicateSelected(store.selection.id)

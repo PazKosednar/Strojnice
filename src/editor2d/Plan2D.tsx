@@ -1,22 +1,30 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from 'react'
 import { removeEquipment } from '../core/equipmentOps'
 import { findEquipmentAt, findOpeningAt, findWallAt } from '../core/hitTest'
 import { placeOpening, removeOpening } from '../core/openingOps'
+import { findEndAt, findPipeAt } from '../core/pipeHitTest'
+import { removePipe } from '../core/pipeOps'
+import { removeTerminal } from '../core/terminalOps'
 import type { Point } from '../core/scene'
 import { equipmentWithConflicts, sceneWarnings } from '../core/sceneWarnings'
 import { removeWall } from '../core/wallOps'
 import { newId } from '../editor/newId'
 import { selectScene, useEditorStore } from '../stores/editorStore'
+import { endStates } from './endStates'
 import { PlanDimensions } from './PlanDimensions'
 import { PlanEquipment } from './PlanEquipment'
 import { PlanGrid } from './PlanGrid'
+import { PlanPipes } from './PlanPipes'
+import { PlanTerminals } from './PlanTerminals'
 import { PlanWalls } from './PlanWalls'
 import { ScaleBar } from './ScaleBar'
 import { sceneBounds } from './sceneBounds'
 import { isTyping, type PointerInfo } from './toolTypes'
 import { useElementSize } from './useElementSize'
 import { useEquipmentTool } from './useEquipmentTool'
+import { usePipeTool } from './usePipeTool'
 import { SELECT_HINT, useSelectTool } from './useSelectTool'
+import { useTerminalTool } from './useTerminalTool'
 import { useWallTool } from './useWallTool'
 import { fitView, panBy, screenToWorld, zoomAt, type View } from './viewport'
 
@@ -28,7 +36,7 @@ const SNAP_PX = 12
 const HINTS = {
   door: 'Klikni na steno, kamor želiš postaviti vrata.',
   window: 'Klikni na steno, kamor želiš postaviti okno.',
-  delete: 'Klikni napravo, steno ali odprtino, ki jo želiš izbrisati.',
+  delete: 'Klikni cev, izhod, napravo, steno ali odprtino, ki jo želiš izbrisati.',
 } as const
 
 /**
@@ -40,6 +48,8 @@ export function Plan2D() {
   const selection = useEditorStore((s) => s.selection)
   const tool = useEditorStore((s) => s.tool)
   const showClearances = useEditorStore((s) => s.showClearances)
+  const hiddenSystems = useEditorStore((s) => s.hiddenSystems)
+  const pipeEdit = useEditorStore((s) => s.pipeEdit)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -53,6 +63,8 @@ export function Plan2D() {
   const wallTool = useWallTool(tool === 'wall')
   const selectTool = useSelectTool(tool === 'select')
   const equipmentTool = useEquipmentTool(tool === 'equipment')
+  const pipeTool = usePipeTool(tool === 'pipe')
+  const terminalTool = useTerminalTool()
 
   const hasWalls = scene.walls.length > 0
   const [prevHasWalls, setPrevHasWalls] = useState(hasWalls)
@@ -73,6 +85,10 @@ export function Plan2D() {
   }
 
   const conflicts = useMemo(() => equipmentWithConflicts(sceneWarnings(scene)), [scene])
+  const states = useMemo(
+    () => endStates(scene, tool === 'pipe' ? pipeTool.source : null),
+    [scene, tool, pipeTool.source],
+  )
 
   const local = (e: { clientX: number; clientY: number }): Point => {
     const rect = svgRef.current!.getBoundingClientRect()
@@ -103,6 +119,8 @@ export function Plan2D() {
 
     if (tool === 'wall') return wallTool.pointerDown(info)
     if (tool === 'equipment') return equipmentTool.pointerDown(info)
+    if (tool === 'pipe') return pipeTool.pointerDown(info, activeView.scale)
+    if (tool === 'terminal') return terminalTool.pointerDown(info)
     if (tool === 'door' || tool === 'window') {
       const hit = findWallAt(scene.walls, info.world, info.tolerance)
       if (!hit) return setMessage('Klikni na steno.')
@@ -113,6 +131,10 @@ export function Plan2D() {
       return
     }
     if (tool === 'delete') {
+      const end = findEndAt(scene, info.world, info.tolerance * 1.5)
+      if (end?.kind === 'terminal') return void apply((s) => removeTerminal(s, end.terminalId))
+      const pipeHit = findPipeAt(scene, info.world, info.tolerance, hiddenSystems)
+      if (pipeHit) return void apply((s) => removePipe(s, pipeHit.pipe.id))
       const item = findEquipmentAt(scene.equipment, info.world)
       if (item) return void apply((s) => removeEquipment(s, item.id))
       const opening = findOpeningAt(scene, info.world, info.tolerance)
@@ -142,6 +164,17 @@ export function Plan2D() {
     if (selectTool.pointerMove(info)) return
     if (tool === 'wall') wallTool.pointerMove(info)
     if (tool === 'equipment') equipmentTool.pointerMove(info)
+  }
+
+  const onDoubleClick = (e: MouseEvent<SVGSVGElement>) => {
+    if (!activeView || tool !== 'select') return
+    selectTool.doubleClick({
+      world: screenToWorld(activeView, local(e)),
+      altKey: e.altKey,
+      tolerance: HIT_PX / activeView.scale,
+      snapDistance: SNAP_PX / activeView.scale,
+      target: e.target as Element,
+    })
   }
 
   const onPointerUp = () => {
@@ -183,7 +216,11 @@ export function Plan2D() {
         ? equipmentTool.hint
         : tool === 'select'
           ? SELECT_HINT
-          : HINTS[tool]
+          : tool === 'pipe'
+            ? pipeTool.hint
+            : tool === 'terminal'
+              ? terminalTool.hint
+              : HINTS[tool]
 
   return (
     <div className="plan2d" ref={containerRef}>
@@ -199,6 +236,7 @@ export function Plan2D() {
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
+          onDoubleClick={onDoubleClick}
           onContextMenu={(e) => e.preventDefault()}
         >
           <PlanGrid
@@ -215,6 +253,22 @@ export function Plan2D() {
             selection={selection}
             conflicts={conflicts}
             showClearances={showClearances}
+            endStates={states}
+            hiddenSystems={hiddenSystems}
+          />
+          <PlanPipes
+            scene={scene}
+            view={activeView}
+            hiddenSystems={hiddenSystems}
+            selectedPipeId={selection?.kind === 'pipe' ? selection.id : null}
+            selectedVertex={pipeEdit.vertex}
+          />
+          <PlanTerminals
+            scene={scene}
+            view={activeView}
+            states={states}
+            selectedId={selection?.kind === 'terminal' ? selection.id : null}
+            hiddenSystems={hiddenSystems}
           />
           {selectTool.renderOverlay(activeView)}
           {wallTool.renderOverlay(activeView)}

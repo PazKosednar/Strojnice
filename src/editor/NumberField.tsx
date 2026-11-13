@@ -2,12 +2,15 @@ import { useId, useState, type KeyboardEvent } from 'react'
 
 interface Props {
   label: string
-  value: number
+  /** null shows an empty field (value not entered yet). */
+  value: number | null
   /** Called with a parsed integer; return false to reject (the field reverts). */
   onCommit: (value: number) => boolean
   disabled?: boolean
   unit?: string
 }
+
+const asText = (value: number | null) => (value === null ? '' : String(value))
 
 /**
  * Integer input that commits on Enter or blur and reverts on Esc or rejection.
@@ -15,18 +18,18 @@ interface Props {
  */
 export function NumberField({ label, value, onCommit, disabled, unit = 'mm' }: Props) {
   const id = useId()
-  const [text, setText] = useState(String(value))
+  const [text, setText] = useState(asText(value))
   const [shown, setShown] = useState(value)
   if (shown !== value) {
     setShown(value)
-    setText(String(value))
+    setText(asText(value))
   }
 
   const commit = () => {
     const trimmed = text.trim()
-    if (trimmed === String(value)) return
+    if (trimmed === asText(value)) return
     const parsed = /^-?\d+$/.test(trimmed) ? Number(trimmed) : NaN
-    if (Number.isNaN(parsed) || !onCommit(parsed)) setText(String(value))
+    if (Number.isNaN(parsed) || !onCommit(parsed)) setText(asText(value))
   }
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -34,7 +37,7 @@ export function NumberField({ label, value, onCommit, disabled, unit = 'mm' }: P
       commit()
       e.currentTarget.select()
     } else if (e.key === 'Escape') {
-      setText(String(value))
+      setText(asText(value))
       e.currentTarget.blur()
     }
   }

@@ -1,4 +1,4 @@
-import type { SystemDef } from '../core/scene'
+import type { LineStyle, SystemDef } from '../core/scene'
 import { addSystem, removeSystem, updateSystem } from '../core/systemOps'
 import { useEditorStore } from '../stores/editorStore'
 import { newId } from './newId'
@@ -19,6 +19,17 @@ export function SystemsSettings({ systems }: { systems: readonly SystemDef[] }) 
               value={system.color}
               onChange={(e) => apply((s) => updateSystem(s, system.id, { color: e.target.value }))}
             />
+            <select
+              aria-label={`Slog črte sistema ${system.name}`}
+              value={system.lineStyle}
+              onChange={(e) =>
+                apply((s) => updateSystem(s, system.id, { lineStyle: e.target.value as LineStyle }))
+              }
+            >
+              <option value="solid">polna</option>
+              <option value="dashed">črtkana</option>
+              <option value="dashdot">črta-pika</option>
+            </select>
             <TextField
               label={`Ime sistema ${system.name}`}
               value={system.name}

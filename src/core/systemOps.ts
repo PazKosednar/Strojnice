@@ -19,7 +19,7 @@ export function addSystem(scene: Scene, system: SystemDef): SceneResult {
 export function updateSystem(
   scene: Scene,
   id: string,
-  patch: Partial<Pick<SystemDef, 'name' | 'color'>>,
+  patch: Partial<Pick<SystemDef, 'name' | 'color' | 'lineStyle'>>,
 ): SceneResult {
   const current = scene.settings.systems.find((s) => s.id === id)
   if (!current) return fail('notFound')

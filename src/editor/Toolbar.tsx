@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { useEditorStore, type Tool } from '../stores/editorStore'
+import { useEditorStore, type Tool, type WallViewMode } from '../stores/editorStore'
 import { RectRoomForm } from './RectRoomForm'
+import { TerminalDraftForm } from './TerminalDraftForm'
 import { SaveStatusIndicator } from './SaveStatusIndicator'
+import { SystemLegend } from './SystemLegend'
 
 export type ViewMode = '2d' | 'both' | '3d'
 
@@ -35,6 +37,10 @@ export function Toolbar({ projectName, viewMode, onViewMode }: Props) {
   const placingType = useEditorStore((s) => s.placingType)
   const showClearances = useEditorStore((s) => s.showClearances)
   const setShowClearances = useEditorStore((s) => s.setShowClearances)
+  const routing = useEditorStore((s) => s.routing)
+  const rerouteAll = useEditorStore((s) => s.rerouteAll)
+  const wallViewMode = useEditorStore((s) => s.wallViewMode)
+  const setWallViewMode = useEditorStore((s) => s.setWallViewMode)
   const [roomFormOpen, setRoomFormOpen] = useState(false)
 
   return (
@@ -68,6 +74,16 @@ export function Toolbar({ projectName, viewMode, onViewMode }: Props) {
         >
           Naprava
         </button>
+        <button type="button" aria-pressed={tool === 'pipe'} onClick={() => setTool('pipe')}>
+          Cev
+        </button>
+        <button
+          type="button"
+          aria-pressed={tool === 'terminal'}
+          onClick={() => setTool('terminal')}
+        >
+          Izhod
+        </button>
         <button type="button" aria-pressed={tool === 'delete'} onClick={() => setTool('delete')}>
           Briši
         </button>
@@ -93,7 +109,31 @@ export function Toolbar({ projectName, viewMode, onViewMode }: Props) {
           />
           Odmiki
         </label>
+        <button
+          type="button"
+          onClick={rerouteAll}
+          disabled={routing.total > 0}
+          title="Ročnih cevi ne spremeni"
+        >
+          Ponovno speljaj vse samodejne
+        </button>
+        {routing.total > 0 && (
+          <span className="routing-status" role="status">
+            Speljujem cevi {routing.done}/{routing.total} …
+          </span>
+        )}
         <span className="spacer" />
+        {viewMode !== '2d' && (
+          <select
+            aria-label="Stene v 3D"
+            value={wallViewMode}
+            onChange={(e) => setWallViewMode(e.target.value as WallViewMode)}
+          >
+            <option value="hide">Skrij sprednje stene</option>
+            <option value="transparent">Prosojne sprednje stene</option>
+            <option value="all">Pokaži vse</option>
+          </select>
+        )}
         <span className="segmented" role="group" aria-label="Pogled">
           {VIEWS.map((v) => (
             <button
@@ -108,7 +148,11 @@ export function Toolbar({ projectName, viewMode, onViewMode }: Props) {
         </span>
         <SaveStatusIndicator />
       </div>
+      <div className="toolbar toolbar-secondary">
+        <SystemLegend />
+      </div>
       {roomFormOpen && <RectRoomForm onDone={() => setRoomFormOpen(false)} />}
+      {tool === 'terminal' && <TerminalDraftForm />}
     </div>
   )
 }
