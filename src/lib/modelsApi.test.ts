@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { modelPath, safeFileName } from './modelsApi'
+import { asGlbBlob, GLB_MIME, modelPath, safeFileName } from './modelsApi'
 
 describe('safeFileName', () => {
   it('keeps simple names', () => {
@@ -20,5 +20,21 @@ describe('safeFileName', () => {
 describe('modelPath', () => {
   it('puts the file in the user and type folder', () => {
     expect(modelPath('u-1', 't-1', 'My model.glb')).toBe('u-1/t-1/My_model.glb')
+  })
+})
+
+describe('asGlbBlob', () => {
+  it('labels a file the browser reports as octet-stream as glTF binary, keeping its bytes', async () => {
+    const file = new File([new Uint8Array([103, 108, 84, 70])], 'a.glb', {
+      type: 'application/octet-stream',
+    })
+    const blob = asGlbBlob(file)
+    expect(blob.type).toBe(GLB_MIME)
+    expect(new Uint8Array(await blob.arrayBuffer())).toEqual(new Uint8Array([103, 108, 84, 70]))
+  })
+
+  it('keeps a file that already has the right type', () => {
+    const file = new File(['x'], 'a.glb', { type: GLB_MIME })
+    expect(asGlbBlob(file)).toBe(file)
   })
 })

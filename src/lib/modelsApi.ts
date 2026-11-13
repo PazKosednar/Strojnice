@@ -20,12 +20,23 @@ export function modelPath(userId: string, typeId: string, fileName: string): str
   return `${userId}/${typeId}/${safeFileName(fileName)}`
 }
 
+export const GLB_MIME = 'model/gltf-binary'
+
+/**
+ * The file's bytes labelled as glTF binary. Browsers report .glb files as
+ * application/octet-stream (or nothing), and the storage client sends a File's own type,
+ * which the bucket rejects; a Blob with the right type is accepted.
+ */
+export function asGlbBlob(file: Blob): Blob {
+  return file.type === GLB_MIME ? file : new Blob([file], { type: GLB_MIME })
+}
+
 /** Uploads a model file into the user's folder; returns its storage path. */
 export async function uploadModel(userId: string, typeId: string, file: File): Promise<string> {
   const path = modelPath(userId, typeId, file.name)
   const { error } = await getSupabase()
     .storage.from(MODELS_BUCKET)
-    .upload(path, file, { contentType: 'model/gltf-binary', upsert: true })
+    .upload(path, asGlbBlob(file), { contentType: GLB_MIME, upsert: true })
   if (error) throw error
   return path
 }
