@@ -24,6 +24,12 @@ export type Tool =
   | 'zone'
   | 'delete'
 
+/** Tab of the side panel. */
+export type PanelTab = 'properties' | 'catalog' | 'rules' | 'warnings'
+
+/** How pipes look in 3D: copper (illustration) or in their system colours. */
+export type PipeLook = 'copper' | 'system'
+
 /** How the 3D view treats walls between the camera and the room. */
 export type WallViewMode = 'hide' | 'transparent' | 'all'
 
@@ -68,6 +74,8 @@ interface EditorState {
   /** Systems switched off in the legend (hidden in 2D and 3D; UI state only). */
   hiddenSystems: string[]
   wallViewMode: WallViewMode
+  pipeLook: PipeLook
+  panelTab: PanelTab
   /** Automatic routing progress: `done` of `total` pipes; total 0 = idle. */
   routing: { done: number; total: number }
   /** Incremented to ask for re-routing all automatic pipes. */
@@ -103,6 +111,8 @@ interface EditorState {
   toggleSystem: (systemId: string) => void
   showAllSystems: () => void
   setWallViewMode: (mode: WallViewMode) => void
+  setPipeLook: (look: PipeLook) => void
+  setPanelTab: (tab: PanelTab) => void
   setRouting: (done: number, total: number) => void
   rerouteAll: () => void
   setPipeEdit: (edit: PipeEdit) => void
@@ -160,6 +170,8 @@ export const useEditorStore = create<EditorState>()((set, get) => {
     showClearances: true,
     hiddenSystems: [],
     wallViewMode: 'hide',
+    pipeLook: 'copper',
+    panelTab: 'properties',
     routing: { done: 0, total: 0 },
     rerouteAllRequest: 0,
     pipeEdit: { segment: null, vertex: null },
@@ -230,6 +242,8 @@ export const useEditorStore = create<EditorState>()((set, get) => {
       })),
     showAllSystems: () => set({ hiddenSystems: [] }),
     setWallViewMode: (wallViewMode) => set({ wallViewMode }),
+    setPipeLook: (pipeLook) => set({ pipeLook }),
+    setPanelTab: (panelTab) => set({ panelTab }),
     setRouting: (done, total) => set({ routing: { done, total } }),
     rerouteAll: () => set((s) => ({ rerouteAllRequest: s.rerouteAllRequest + 1 })),
     setPipeEdit: (pipeEdit) => set({ pipeEdit }),

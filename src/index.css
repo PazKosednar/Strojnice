@@ -912,3 +912,60 @@ select[aria-invalid='true'] {
   padding: 0.5rem;
   margin-bottom: 0.5rem;
 }
+
+/* Simplified toolbar (more menu, primary action) */
+.toolbar button.primary {
+  background: #2563eb;
+  color: #fff;
+  border-color: #1d4ed8;
+}
+.more {
+  position: relative;
+}
+.more-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 230px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+.more-menu button {
+  text-align: left;
+}
+.more-menu button[aria-checked='true'] {
+  background: #dbeafe;
+}
+.more-menu hr {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+  margin: 2px 0;
+}
+.plan-guide {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 16px 20px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+  max-width: 380px;
+  pointer-events: none;
+}
+.plan-guide ol {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+}
+.plan-guide li {
+  margin: 0.25rem 0;
+}

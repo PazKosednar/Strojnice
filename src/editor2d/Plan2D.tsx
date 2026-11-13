@@ -322,6 +322,23 @@ export function Plan2D() {
       <button type="button" className="plan2d-fit" onClick={() => setFitPending(true)}>
         Prilagodi pogled
       </button>
+      {!hasWalls && (
+        <div className="plan-guide" role="note">
+          <strong>Kako začeti</strong>
+          <ol>
+            <li>
+              <b>Pravokoten prostor</b>: vpiši mere prostora.
+            </li>
+            <li>
+              <b>Dodaj napravo</b>: v katalogu pri napravi klikni »Postavi« in klikni v tloris.
+              Stenski napravi vpiši višino od tal.
+            </li>
+            <li>
+              <b>Samodejno poveži in spelji</b>: cevi se povežejo in speljejo same.
+            </li>
+          </ol>
+        </div>
+      )}
       <p className="plan2d-hint">{hint}</p>
     </div>
   )

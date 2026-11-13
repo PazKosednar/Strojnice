@@ -10,6 +10,7 @@ interface Props {
   unit?: string
   /** When given, an empty field is allowed and means "not entered" (return false to reject). */
   onClear?: () => boolean
+  autoFocus?: boolean
 }
 
 const asText = (value: number | null) => (value === null ? '' : String(value))
@@ -18,7 +19,15 @@ const asText = (value: number | null) => (value === null ? '' : String(value))
  * Integer input that commits on Enter or blur and reverts on Esc or rejection.
  * Shows the latest model value whenever it changes from outside.
  */
-export function NumberField({ label, value, onCommit, disabled, unit = 'mm', onClear }: Props) {
+export function NumberField({
+  label,
+  value,
+  onCommit,
+  disabled,
+  unit = 'mm',
+  onClear,
+  autoFocus,
+}: Props) {
   const id = useId()
   const [text, setText] = useState(asText(value))
   const [shown, setShown] = useState(value)
@@ -57,6 +66,8 @@ export function NumberField({ label, value, onCommit, disabled, unit = 'mm', onC
           inputMode="numeric"
           value={text}
           disabled={disabled}
+          autoFocus={autoFocus}
+          onFocus={(e) => autoFocus && e.currentTarget.select()}
           onChange={(e) => setText(e.target.value)}
           onBlur={commit}
           onKeyDown={onKeyDown}

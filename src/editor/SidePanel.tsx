@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import type { PanelTab } from '../stores/editorStore'
 import { CatalogPanel } from '../catalog/CatalogPanel'
 import { sceneWarnings } from '../core/sceneWarnings'
 import { selectScene, useEditorStore } from '../stores/editorStore'
@@ -6,14 +7,15 @@ import { PropertiesPanel } from './PropertiesPanel'
 import { RulesPanel } from './RulesPanel'
 import { WarningsPanel } from './WarningsPanel'
 
-type Tab = 'properties' | 'catalog' | 'rules' | 'warnings'
+type Tab = PanelTab
 
 /** Side panel with tabs: properties of the selection, catalogue, project rules, warnings. */
 export function SidePanel() {
   const scene = useEditorStore(selectScene)
   const selection = useEditorStore((s) => s.selection)
   const warnings = useMemo(() => sceneWarnings(scene), [scene])
-  const [tab, setTab] = useState<Tab>('properties')
+  const tab = useEditorStore((s) => s.panelTab)
+  const setTab = useEditorStore((s) => s.setPanelTab)
 
   // Selecting an element (in the plan or from a warning) shows its properties.
   const selectedId = selection?.id ?? null

@@ -61,6 +61,8 @@ export function EquipmentProperties({ equipment, systems }: Props) {
         label="Višina od tal"
         value={equipment.elevation}
         onCommit={(elevation) => update({ elevation })}
+        // A wall unit still at 0 mm: its mounting height is what the user enters next.
+        autoFocus={type.mounting === 'wall' && equipment.elevation === 0}
       />
       <NumberField
         label="Rotacija"

@@ -30,7 +30,10 @@ TypeScript je zaklenjen na `~6.0`, ker typescript-eslint še ne podpira TS 7.
 - **Oznake naprav in kode** (npr. `HP-01`, `CYL-01`) so točni identifikatorji, ne
   spreminjaj jih (ne prevajaj, ne spreminjaj velikosti črk, ne normaliziraj).
 - **Uporabniški vmesnik je v slovenščini**, koda in komentarji v angleščini.
-- Izgled je začasen: čist, funkcionalen, brez posebnega oblikovanja.
+- Vmesnik je preprost: glavni koraki v eni vrstici (prostor, naprava, cev, samodejno
+  poveži), redka orodja v meniju »Več«. 3D ima ilustrativni videz (opečnat zunanji in
+  blokovni notranji sloj stene, tla s ploščicami čez prostor, bakrene cevi s koleni, bele
+  naprave, mehka svetloba); teksture so narisane v programu (`view3d/textures.ts`).
 - Majhne datoteke z eno odgovornostjo; po vsaki zaključeni nalogi testi in commit.
 
 ## Dogovori modela (faza 1)
@@ -135,7 +138,9 @@ TypeScript je zaklenjen na `~6.0`, ker typescript-eslint še ne podpira TS 7.
   lastni nastavek prost (priključki proizvajalca so lahko bližje od razmika med cevmi).
 - Sprememba ovir, con, pravil ali nastavitev znova spelje vse samodejne cevi.
 - Uteži so v `ROUTING_COSTS` (`avoidZoneFactor`, `preferredZoneFactor`, `softRuleFactor`,
-  `softCrossingPenalty`, `parallelFactor`); so nastavitve aplikacije, ne predpisi.
+  `softCrossingPenalty`, `parallelFactor`, `floorRunHeight`/`floorRunFactor`: vodoravni
+  odseki pri tleh so dražji, zato cevi tečejo ob stenah); so nastavitve aplikacije, ne
+  predpisi.
 - **Ključ povezave** (`Port.connectionKey` + `flow: 'out' | 'in'`, scena v6) je točen
   identifikator. `proposeConnections` predlaga pare: ključ (ven → noter, različni napravi,
   isti sistem), edini kandidat (brez ključa: drug drugemu edini prosti priključek istega
