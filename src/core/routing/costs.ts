@@ -18,6 +18,17 @@ export const ROUTING_COSTS = {
   inWallFactor: 4,
   /** Cost factor per mm of pipe inside the clearance zone of other equipment. */
   clearanceFactor: 5,
+  /** Cost per mm inside an 'avoid' zone is multiplied by this (more expensive). */
+  avoidZoneFactor: 4,
+  /**
+   * Cost per mm inside a 'preferred' zone is multiplied by this (cheaper). Below 1, so the
+   * A* estimate is scaled by it to stay a lower bound.
+   */
+  preferredZoneFactor: 0.5,
+  /** Extra cost per mm and per soft project rule broken there (a penalty, not a ban). */
+  softRuleFactor: 5,
+  /** Extra cost of a wall penetration when a soft rule says not to cross walls. */
+  softCrossingPenalty: 3000,
 } as const
 
 /** Limits that keep routing fast and bounded (see docs/zasnova.md, faza 3). */

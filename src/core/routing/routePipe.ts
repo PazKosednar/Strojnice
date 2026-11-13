@@ -1,5 +1,6 @@
 import { footprintSize } from '../equipmentGeometry'
 import { endGeometry, resolveEnd } from '../pipeEnds'
+import { effectiveRadius } from '../pipeSize'
 import type { Pipe, Point3, RoutePoint, Scene } from '../scene'
 import { wallExtensions, wallOutline } from '../wallJoins'
 import { ROUTING_COSTS, ROUTING_LIMITS, type RoutingCosts, type RoutingLimits } from './costs'
@@ -140,8 +141,13 @@ function search(input: SearchInput): SearchResult {
   const closed = new Uint8Array(states)
   const heap = new MinHeap()
   const [gx, gy, gz] = [input.goal.x, input.goal.y, input.goal.z]
+  // Lower bound of the cost per mm: preferred zones make pipe cheaper than its length.
+  const hScale = field.hasPreferredZones ? Math.min(1, costs.preferredZoneFactor) : 1
   const h = (x: number, y: number, z: number) =>
-    Math.abs(x - gx) + Math.abs(y - gy) + Math.abs(z - gz)
+    hScale * (Math.abs(x - gx) + Math.abs(y - gy) + Math.abs(z - gz))
+  const [sx, sy, sz] = [input.start.x, input.start.y, input.start.z]
+  const isEnd = (x: number, y: number, z: number) =>
+    (x === sx && y === sy && z === sz) || (x === gx && y === gy && z === gz)
 
   const startState = startNode * 6 + input.startDir
   g[startState] = 0
@@ -187,15 +193,31 @@ function search(input: SearchInput): SearchResult {
       if (!isGoal && vFlags & 2) continue
       const mid = { x: (ux + vx) / 2, y: (uy + vy) / 2, z: (uz + vz) / 2 }
       if (field.blocked(mid)) continue
+      const vInWall = (vFlags & 4) !== 0
+      const uInWall = (uFlags & 4) !== 0
+      const entersWall = !uInWall && (vInWall || field.inWall(mid))
+      if (field.wallCrossing === 'blocked' && (vInWall || entersWall)) continue
+      // Height ranges and vertical order; the first and last edge are fixed by the ends.
+      const ruled =
+        isEnd(ux, uy, uz) || isEnd(vx, vy, vz)
+          ? 0
+          : field.edgeRules({ x: ux, y: uy, z: uz }, { x: vx, y: vy, z: vz })
+      if (ruled < 0) continue
 
       const length = Math.abs(vx - ux) + Math.abs(vy - uy) + Math.abs(vz - uz)
       const near = Math.min(wallDistance(jx, jy), costs.wallDistanceCap) / costs.wallDistanceCap
       let cost = length * (1 + costs.wallDistanceWeight * near)
-      const vInWall = (vFlags & 4) !== 0
-      const uInWall = (uFlags & 4) !== 0
+      const zone = field.zoneAt(mid)
+      if (zone === 'avoid') cost *= costs.avoidZoneFactor
+      else if (zone === 'preferred') cost *= costs.preferredZoneFactor
       if (vInWall && uInWall) cost += length * costs.inWallFactor
-      else if (vInWall || field.inWall(mid)) cost += costs.wallCrossing
+      else if (entersWall) {
+        cost += costs.wallCrossing
+        if (field.wallCrossing === 'penalized') cost += costs.softCrossingPenalty
+      }
       if (field.inClearance(mid)) cost += length * costs.clearanceFactor
+      const soft = ruled + field.softViolations(mid)
+      if (soft > 0) cost += length * costs.softRuleFactor * soft
       if (d !== dir) cost += costs.bend
       if (isGoal && d !== input.goalArriveDir) cost += costs.bend
 
@@ -239,7 +261,8 @@ export function routePipe(scene: Scene, pipe: Pipe, options: RouteOptions = {}):
 
   const own = [pipe.from, pipe.to].flatMap((e) => (e.kind === 'port' ? [e.equipmentId] : []))
   const field = buildObstacleField(scene, {
-    pipeRadius: pipe.outerDiameter / 2,
+    pipeRadius: effectiveRadius(scene, pipe),
+    systemId: pipe.systemId,
     spacing: scene.settings.pipeSpacing,
     ownEquipmentIds: own,
     ignorePipeIds: [pipe.id],

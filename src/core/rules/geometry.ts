@@ -48,6 +48,23 @@ export function segmentsOutsidePortStubs(scene: Scene, pipe: Pipe): Segment[] {
   return out
 }
 
+/** The straight runs out of the pipe's ports (the parts segmentsOutsidePortStubs drops). */
+export function portStubSegments(scene: Scene, pipe: Pipe): Segment[] {
+  const stub = scene.settings.portStraight
+  const segments = routeSegments(pipe.route)
+  if (segments.length === 0 || stub <= 0) return []
+  const out: Segment[] = []
+  const first = segments[0]!
+  const last = segments[segments.length - 1]!
+  if (pipe.from.kind === 'port') {
+    out.push({ a: first.a, b: along(first.a, first.b, stub), index: first.index })
+  }
+  if (pipe.to.kind === 'port') {
+    out.push({ a: along(last.b, last.a, stub), b: last.b, index: last.index })
+  }
+  return out
+}
+
 interface Interval {
   lo: number
   hi: number
