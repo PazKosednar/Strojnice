@@ -10,7 +10,7 @@
  */
 
 /** Current scene schema version. Bump when the stored shape changes. */
-export const SCENE_VERSION = 5
+export const SCENE_VERSION = 6
 
 /** Length unit used throughout the scene. */
 export type SceneUnits = 'mm'
@@ -96,7 +96,17 @@ export interface Port {
    * `size`. A port without it cannot be connected.
    */
   outerDiameter?: number
+  /**
+   * Connection key: two free ports with the same key and opposite flow on different
+   * equipment belong together (e.g. outdoor unit flow out -> indoor unit flow in). Exact
+   * text, compared character by character.
+   */
+  connectionKey?: string
+  /** Direction of flow at the port, used with `connectionKey`. */
+  flow?: PortFlow
 }
+
+export type PortFlow = 'out' | 'in'
 
 export type EquipmentShape =
   | { kind: 'box'; width: number; depth: number; height: number }

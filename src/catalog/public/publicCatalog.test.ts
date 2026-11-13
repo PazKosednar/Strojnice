@@ -88,3 +88,21 @@ describe('groupByManufacturer', () => {
     ])
   })
 })
+
+describe('Vitocal 250-A connection keys', () => {
+  it('pair ODU A -> IDU C (flow) and IDU D -> ODU B (return), nothing else', () => {
+    const keys = PUBLIC_PRODUCTS.flatMap(({ type }) =>
+      type.ports
+        .filter((p) => p.connectionKey)
+        .map((p) => `${type.id}:${p.id}:${p.connectionKey}:${p.flow}`),
+    )
+    expect(keys.sort()).toEqual(
+      [
+        'viessmann-vitocal-250-a-idu-a:C:vitocal-250-a-primary-flow:in',
+        'viessmann-vitocal-250-a-idu-a:D:vitocal-250-a-primary-return:out',
+        'viessmann-vitocal-250-a-odu-250-a:A:vitocal-250-a-primary-flow:out',
+        'viessmann-vitocal-250-a-odu-250-a:B:vitocal-250-a-primary-return:in',
+      ].sort(),
+    )
+  })
+})

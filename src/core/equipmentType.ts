@@ -49,6 +49,15 @@ function port(value: unknown, path: string): Port {
   if (o.outerDiameter !== undefined && o.outerDiameter !== null) {
     result.outerDiameter = int(o.outerDiameter, `${path}.outerDiameter`, 1)
   }
+  if (o.connectionKey !== undefined && o.connectionKey !== null) {
+    result.connectionKey = str(o.connectionKey, `${path}.connectionKey`)
+  }
+  if (o.flow !== undefined && o.flow !== null) {
+    result.flow = oneOf(o.flow, `${path}.flow`, ['out', 'in'] as const)
+  }
+  if ((result.connectionKey === undefined) !== (result.flow === undefined)) {
+    throw new SceneFormatError(`${path}: connectionKey and flow go together`)
+  }
   return result
 }
 

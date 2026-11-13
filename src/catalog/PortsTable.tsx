@@ -1,5 +1,5 @@
 import { PORT_DIRECTIONS } from '../core/equipmentType'
-import type { PortDirection, SystemDef } from '../core/scene'
+import type { PortDirection, PortFlow, SystemDef } from '../core/scene'
 import type { DraftErrors, PortDraft } from './typeDraft'
 
 const DIRECTION_LABELS: Record<PortDirection, string> = {
@@ -40,6 +40,8 @@ export function PortsTable({ ports, systems, errors, onChange, onAdd }: Props) {
               <th>Smer</th>
               <th>Dimenzija</th>
               <th>⌀ zun. (mm)</th>
+              <th>Ključ povezave</th>
+              <th>Tok</th>
               <th />
             </tr>
           </thead>
@@ -121,6 +123,27 @@ export function PortsTable({ ports, systems, errors, onChange, onAdd }: Props) {
                     />
                   </td>
                   <td>
+                    <input
+                      className="size"
+                      aria-label={`Ključ povezave priključka ${n}`}
+                      aria-invalid={invalid(i, 'connectionKey')}
+                      value={port.connectionKey}
+                      onChange={(e) => update(i, { connectionKey: e.target.value })}
+                    />
+                  </td>
+                  <td>
+                    <select
+                      aria-label={`Tok priključka ${n}`}
+                      aria-invalid={invalid(i, 'connectionKey')}
+                      value={port.flow}
+                      onChange={(e) => update(i, { flow: e.target.value as PortFlow | '' })}
+                    >
+                      <option value="">—</option>
+                      <option value="out">ven</option>
+                      <option value="in">noter</option>
+                    </select>
+                  </td>
+                  <td>
                     <button
                       type="button"
                       aria-label={`Izbriši priključek ${n}`}
@@ -142,7 +165,9 @@ export function PortsTable({ ports, systems, errors, onChange, onAdd }: Props) {
         Položaj je v mm v koordinatah naprave: izhodišče je središče tlorisa na spodnjem robu, x
         desno (gledano od spredaj), +y proti hrbtni strani, z navzgor. Smer pove, kam cev zapusti
         napravo. Dimenzija je prosto besedilo (npr. DN25) in se ne preverja. Zunanji premer cevi
-        vneseš iz dokumentacije; brez njega priključka ni mogoče povezati.
+        vneseš iz dokumentacije; brez njega priključka ni mogoče povezati. Ključ povezave (poljubno
+        besedilo) in tok povežeta priključka različnih naprav pri samodejnem povezovanju: isti
+        ključ, en »ven« in en »noter«.
       </p>
     </div>
   )

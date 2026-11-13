@@ -252,7 +252,7 @@ describe('migrateScene v3 -> v4', () => {
 describe('migrateScene v4 -> v5', () => {
   it('adds insulation 0 to every system and empty obstacles, zones and rules', () => {
     const v5 = migrateScene(clone(v4Scene)) as Record<string, unknown> & typeof v4Scene
-    expect(v5.version).toBe(5)
+    expect(v5.version).toBe(SCENE_VERSION)
     expect(v5.settings.systems).toEqual(
       v4Scene.settings.systems.map((s) => ({ ...s, insulationThickness: 0 })),
     )
@@ -273,5 +273,12 @@ describe('migrateScene v4 -> v5', () => {
       ...v4Scene.settings,
       systems: undefined,
     })
+  })
+})
+
+describe('migrateScene v5 -> v6', () => {
+  it('only bumps the version (connection keys are optional new port fields)', () => {
+    const v5 = { ...(migrateScene(clone(v4Scene)) as object), version: 5 }
+    expect(migrateScene(clone(v5))).toEqual({ ...v5, version: 6 })
   })
 })

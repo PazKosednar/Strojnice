@@ -5,6 +5,10 @@ import type { PublicProduct } from './product'
  *
  * Dimensions are the model's extents (scripts/measure-model.mjs). Service clearances are
  * not entered yet: add them from the manufacturer's installation manual.
+ *
+ * Connection keys pair the primary circuit (given by the user): ODU A (out) -> IDU C (in)
+ * 'vitocal-250-a-primary-flow', IDU D (out) -> ODU B (in) 'vitocal-250-a-primary-return'.
+ * The other IDU ports get no key: the user sets keys in their own catalogue.
  */
 export const VIESSMANN: readonly PublicProduct[] = [
   {
@@ -45,6 +49,8 @@ export const VIESSMANN: readonly PublicProduct[] = [
           direction: '-z',
           size: 'Cu 28 x 1,0',
           outerDiameter: 28,
+          connectionKey: 'vitocal-250-a-primary-flow',
+          flow: 'in',
         },
         {
           id: 'D',
@@ -54,6 +60,8 @@ export const VIESSMANN: readonly PublicProduct[] = [
           direction: '-z',
           size: 'Cu 28 x 1,0',
           outerDiameter: 28,
+          connectionKey: 'vitocal-250-a-primary-return',
+          flow: 'out',
         },
         {
           id: 'E',
@@ -102,6 +110,8 @@ export const VIESSMANN: readonly PublicProduct[] = [
           direction: '-z',
           size: 'Cu 28 x 1,0',
           outerDiameter: 28,
+          connectionKey: 'vitocal-250-a-primary-flow',
+          flow: 'out',
         },
         {
           id: 'B',
@@ -111,6 +121,8 @@ export const VIESSMANN: readonly PublicProduct[] = [
           direction: '-z',
           size: 'Cu 28 x 1,0',
           outerDiameter: 28,
+          connectionKey: 'vitocal-250-a-primary-return',
+          flow: 'in',
         },
       ],
       model: {

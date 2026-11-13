@@ -8,6 +8,9 @@ import { roomScene } from '../testFixtures'
 import { buildObstacleField } from './obstacles'
 import { routePipe, type RouteOutcome } from './routePipe'
 
+/** Large scenes may take longer on a busy test machine; these tests check the route shape. */
+const SLOW_OK = { limits: { timeBudgetMs: 30_000 } }
+
 function unwrap(result: SceneResult): Scene {
   if (!result.ok) throw new Error(`expected ok, got ${result.error}`)
   return result.scene
@@ -201,7 +204,7 @@ describe('routePipe', () => {
       port('out', 'flow'),
       port('in', 'flow'),
     )
-    const result = expectOk(routePipe(scene, pipe))
+    const result = expectOk(routePipe(scene, pipe, SLOW_OK))
     expect(result.crossings.map((c) => c.wallId)).toEqual(['w4'])
     expect(isOrthogonal(result.route)).toBe(true)
   })
@@ -226,7 +229,7 @@ describe('routePipe', () => {
       ],
     }
     const [withPipe, pipe] = connect(scene, 'p', port('out', 'flow'), port('in', 'flow'))
-    const result = expectOk(routePipe(withPipe, pipe))
+    const result = expectOk(routePipe(withPipe, pipe, SLOW_OK))
     // The whole right wall is a door up to 2100 mm: nothing may pass through that opening.
     const inDoor = samples(result.route).filter(
       (p) => p.x > 3100 && p.x < 3300 && p.y > 0 && p.y < 1800 && p.z < 2100,

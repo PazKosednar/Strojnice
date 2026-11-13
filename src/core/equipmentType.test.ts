@@ -21,6 +21,28 @@ describe('parseEquipmentType', () => {
     expect(result.ok && result.type.ports[0]!.size).toBe('G 3/4')
   })
 
+  it('reads a connection key with its flow, exactly as stored', () => {
+    const type = clone(boxType)
+    type.ports[0] = { ...type.ports[0]!, connectionKey: 'Vitocal-Flow 1', flow: 'out' }
+    const result = parseEquipmentType(type)
+    expect(result.ok && result.type.ports[0]).toMatchObject({
+      connectionKey: 'Vitocal-Flow 1',
+      flow: 'out',
+    })
+  })
+
+  it('rejects a key without a flow, a flow without a key and unknown flows', () => {
+    const keyOnly = clone(boxType)
+    keyOnly.ports[0] = { ...keyOnly.ports[0]!, connectionKey: 'k' }
+    expect(errorOf(keyOnly)).toContain('connectionKey and flow go together')
+    const flowOnly = clone(boxType)
+    flowOnly.ports[0] = { ...flowOnly.ports[0]!, flow: 'in' }
+    expect(errorOf(flowOnly)).toContain('connectionKey and flow go together')
+    const bad = clone(boxType) as unknown as { ports: Record<string, unknown>[] }
+    bad.ports[0] = { ...bad.ports[0], connectionKey: 'k', flow: 'sideways' }
+    expect(errorOf(bad)).toContain('flow')
+  })
+
   it('accepts negative port coordinates and an empty size', () => {
     const type = clone(boxType)
     type.ports[0]!.position.x = -250

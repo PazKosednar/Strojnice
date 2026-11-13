@@ -7,6 +7,7 @@ import type {
   Mounting,
   Port,
   PortDirection,
+  PortFlow,
 } from '../core/scene'
 import type { EquipmentTemplate } from './templates'
 
@@ -22,6 +23,10 @@ export interface PortDraft {
   size: string
   /** Outer pipe diameter (mm); empty = not entered yet. */
   outerDiameter: string
+  /** Connection key (exact text); empty = none. */
+  connectionKey: string
+  /** Flow at the port; '' = none (only together with a key). */
+  flow: PortFlow | ''
 }
 
 export type ClearanceSideKey = keyof Clearances
@@ -102,6 +107,8 @@ export function draftFromType(type: EquipmentType): TypeDraft {
       direction: p.direction,
       size: p.size,
       outerDiameter: p.outerDiameter === undefined ? '' : String(p.outerDiameter),
+      connectionKey: p.connectionKey ?? '',
+      flow: p.flow ?? '',
     })),
     ...(type.model ? { model: type.model } : {}),
   }
@@ -118,6 +125,8 @@ export function emptyPortDraft(id: string, systemId: string): PortDraft {
     direction: '-y',
     size: '',
     outerDiameter: '',
+    connectionKey: '',
+    flow: '',
   }
 }
 
@@ -133,6 +142,7 @@ const MESSAGES = {
   portSystem: 'Izberi sistem.',
   portCoordinate: 'Vnesi celo število v mm.',
   portDiameter: 'Premer mora biti celo število v mm, večje od 0, ali prazno.',
+  portKey: 'Ključ povezave in tok vneseš skupaj (oba ali nobenega).',
 }
 
 /** Field key -> Slovenian message. Port fields use `ports.<index>.<field>`. */
@@ -185,6 +195,10 @@ export function draftToType(draft: TypeDraft): DraftResult {
     if (diameter === null || (diameter !== undefined && diameter <= 0)) {
       errors[`ports.${i}.outerDiameter`] = MESSAGES.portDiameter
     }
+    // The key is an exact identifier: kept as typed, only checked for being complete.
+    const key = p.connectionKey
+    if ((key.trim() === '') !== (p.flow === ''))
+      errors[`ports.${i}.connectionKey`] = MESSAGES.portKey
     return {
       id: p.id,
       name: p.name.trim(),
@@ -193,6 +207,7 @@ export function draftToType(draft: TypeDraft): DraftResult {
       direction: p.direction,
       size: p.size.trim(),
       ...(typeof diameter === 'number' && diameter > 0 ? { outerDiameter: diameter } : {}),
+      ...(key.trim() !== '' && p.flow !== '' ? { connectionKey: key, flow: p.flow } : {}),
     }
   })
 

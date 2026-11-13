@@ -95,11 +95,20 @@ function v4ToV5(scene: Obj): Obj {
   }
 }
 
+/**
+ * v5 -> v6 (phase 3b, part B): ports may carry an optional connection key and flow. Nothing
+ * to convert; only the version changes.
+ */
+function v5ToV6(scene: Obj): Obj {
+  return { ...scene, version: 6 }
+}
+
 const MIGRATIONS: Record<number, (scene: Obj) => Obj> = {
   1: v1ToV2,
   2: v2ToV3,
   3: v3ToV4,
   4: v4ToV5,
+  5: v5ToV6,
 }
 
 /**
