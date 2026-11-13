@@ -11,6 +11,8 @@ import {
   str,
   uniqueIds,
 } from './parseHelpers'
+import { readRule } from './parseRules'
+import { readObstacle, readZone } from './parseSpace'
 import { pipeEndKey } from './pipeEnds'
 import {
   SCENE_VERSION,
@@ -50,6 +52,7 @@ function system(value: unknown, path: string): SystemDef {
     name: str(o.name, `${path}.name`),
     color,
     lineStyle: oneOf(o.lineStyle, `${path}.lineStyle`, ['solid', 'dashed', 'dashdot'] as const),
+    insulationThickness: int(o.insulationThickness, `${path}.insulationThickness`, 0),
   }
 }
 
@@ -215,7 +218,15 @@ function parse(json: unknown): Scene {
   const items = arr(root.equipment, 'equipment').map((e, i) => equipment(e, `equipment[${i}]`))
   const terminals = arr(root.terminals, 'terminals').map((t, i) => terminal(t, `terminals[${i}]`))
   const pipes = arr(root.pipes, 'pipes').map((p, i) => pipe(p, `pipes[${i}]`))
-  uniqueIds([...walls, ...openings, ...items, ...terminals, ...pipes], 'ids')
+  const obstacles = arr(root.obstacles, 'obstacles').map((o, i) =>
+    readObstacle(o, `obstacles[${i}]`),
+  )
+  const zones = arr(root.zones, 'zones').map((z, i) => readZone(z, `zones[${i}]`))
+  const rules = arr(root.rules, 'rules').map((r, i) => readRule(r, `rules[${i}]`))
+  uniqueIds(
+    [...walls, ...openings, ...items, ...terminals, ...pipes, ...obstacles, ...zones, ...rules],
+    'ids',
+  )
 
   openings.forEach((o, i) => {
     const host = walls.find((w) => w.id === o.wallId)
@@ -228,6 +239,7 @@ function parse(json: unknown): Scene {
   const tagged = [
     ...items.map((item, i) => ({ tag: item.tag, path: `equipment[${i}].tag` })),
     ...terminals.map((t, i) => ({ tag: t.tag, path: `terminals[${i}].tag` })),
+    ...obstacles.map((o, i) => ({ tag: o.tag, path: `obstacles[${i}].tag` })),
   ]
   for (const { tag, path } of tagged) {
     if (tags.has(tag)) throw new SceneFormatError(`${path}: duplicate tag "${tag}"`)
@@ -249,6 +261,9 @@ function parse(json: unknown): Scene {
     equipment: items,
     terminals,
     pipes,
+    obstacles,
+    zones,
+    rules,
   }
 }
 

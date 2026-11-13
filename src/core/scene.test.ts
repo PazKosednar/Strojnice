@@ -18,6 +18,9 @@ describe('createEmptyScene', () => {
       equipment: [],
       terminals: [],
       pipes: [],
+      obstacles: [],
+      zones: [],
+      rules: [],
     })
   })
 

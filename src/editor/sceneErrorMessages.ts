@@ -10,8 +10,9 @@ const MESSAGES: Record<SceneError, string> = {
   wallTooShort: 'Stena ne sme imeti dolžine 0.',
   invalidValue: 'Vrednost mora biti celo število v mm, večje od 0.',
   openingsDoNotFit: 'Sprememba ni mogoča: odprtine v steni ne bi več imele prostora.',
-  tagEmpty: 'Oznaka naprave ne sme biti prazna.',
-  tagTaken: 'To oznako že ima druga naprava. Oznaka mora biti v projektu enolična.',
+  tagEmpty: 'Oznaka ne sme biti prazna.',
+  tagTaken:
+    'To oznako že ima drug element (naprava, izhod ali ovira). Oznaka mora biti v projektu enolična.',
   invalidPlacement: 'Položaj in višina morata biti celi števili v mm (višina od tal vsaj 0).',
   invalidSystem: 'Sistem mora imeti ime in barvo v obliki #rrggbb.',
   pipeSystemMismatch: 'Povezava ni mogoča: oba konca morata pripadati istemu sistemu.',
@@ -22,6 +23,10 @@ const MESSAGES: Record<SceneError, string> = {
   invalidRoute: 'Trasa mora biti sestavljena iz pravokotnih odsekov v celih mm.',
   invalidTerminal:
     'Izhod mora biti na steni (odmik znotraj dolžine stene, višina do višine stene), s sistemom in premerom.',
+  invalidBox:
+    'Mere morajo biti cela števila v mm (širina, globina in višina večje od 0, spodnja višina vsaj 0), zasuk 0–359°.',
+  invalidRule:
+    'Vrednosti pravila morajo biti cela števila v mm (razmiki 0 ali več); najnižja višina ne sme biti nad najvišjo.',
 }
 
 /** Slovenian message for a rejected scene edit. */

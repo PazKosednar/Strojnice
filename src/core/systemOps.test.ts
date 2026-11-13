@@ -13,6 +13,7 @@ describe('systemOps', () => {
       name: 'Ogrevanje',
       color: '#aa0000',
       lineStyle: 'solid',
+      insulationThickness: 0,
     })
   })
 
@@ -36,14 +37,35 @@ describe('systemOps', () => {
       name: 'Plin',
       color: '#ffcc00',
       lineStyle: 'solid',
+      insulationThickness: 0,
     })
     expect(added.ok && added.scene.settings.systems).toHaveLength(5)
     expect(
-      addSystem(scene, { id: 'supply', name: 'X', color: '#000000', lineStyle: 'solid' }),
+      addSystem(scene, {
+        id: 'supply',
+        name: 'X',
+        color: '#000000',
+        lineStyle: 'solid',
+        insulationThickness: 0,
+      }),
     ).toEqual({
       ok: false,
       error: 'invalidSystem',
     })
+  })
+
+  it('changes the insulation thickness (whole mm, 0 or more)', () => {
+    const scene = createEmptyScene()
+    const result = updateSystem(scene, 'cold', { insulationThickness: 13 })
+    expect(result.ok && result.scene.settings.systems.find((s) => s.id === 'cold')).toMatchObject({
+      insulationThickness: 13,
+    })
+    for (const bad of [-1, 2.5]) {
+      expect(updateSystem(scene, 'cold', { insulationThickness: bad })).toEqual({
+        ok: false,
+        error: 'invalidSystem',
+      })
+    }
   })
 
   it('removes a system without touching the others', () => {

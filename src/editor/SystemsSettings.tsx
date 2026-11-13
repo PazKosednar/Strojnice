@@ -2,9 +2,10 @@ import type { LineStyle, SystemDef } from '../core/scene'
 import { addSystem, removeSystem, updateSystem } from '../core/systemOps'
 import { useEditorStore } from '../stores/editorStore'
 import { newId } from './newId'
+import { NumberField } from './NumberField'
 import { TextField } from './TextField'
 
-/** Editable list of the project's systems (media): colour and name. */
+/** Editable list of the project's systems (media): colour, line style, name, insulation. */
 export function SystemsSettings({ systems }: { systems: readonly SystemDef[] }) {
   const apply = useEditorStore((s) => s.apply)
   return (
@@ -35,6 +36,13 @@ export function SystemsSettings({ systems }: { systems: readonly SystemDef[] }) 
               value={system.name}
               onCommit={(name) => apply((s) => updateSystem(s, system.id, { name }))}
             />
+            <NumberField
+              label={`Izolacija sistema ${system.name}`}
+              value={system.insulationThickness}
+              onCommit={(insulationThickness) =>
+                apply((s) => updateSystem(s, system.id, { insulationThickness }))
+              }
+            />
             <button
               type="button"
               aria-label={`Izbriši sistem ${system.name}`}
@@ -49,7 +57,13 @@ export function SystemsSettings({ systems }: { systems: readonly SystemDef[] }) 
         type="button"
         onClick={() =>
           apply((s) =>
-            addSystem(s, { id: newId(), name: 'Nov sistem', color: '#7f7f7f', lineStyle: 'solid' }),
+            addSystem(s, {
+              id: newId(),
+              name: 'Nov sistem',
+              color: '#7f7f7f',
+              lineStyle: 'solid',
+              insulationThickness: 0,
+            }),
           )
         }
       >

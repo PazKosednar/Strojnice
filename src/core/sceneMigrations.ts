@@ -74,7 +74,33 @@ function v3ToV4(scene: Obj): Obj {
   return { ...scene, version: 4 }
 }
 
-const MIGRATIONS: Record<number, (scene: Obj) => Obj> = { 1: v1ToV2, 2: v2ToV3, 3: v3ToV4 }
+/**
+ * v4 -> v5 (phase 3b): systems gain an insulation thickness (0 = none, as before), the
+ * scene gains obstacles, zones and project rules (all empty). Nothing else changes.
+ */
+function v4ToV5(scene: Obj): Obj {
+  const settings = isObj(scene.settings) ? scene.settings : {}
+  const systems = Array.isArray(settings.systems)
+    ? settings.systems.map((system: unknown) =>
+        isObj(system) ? { ...system, insulationThickness: 0 } : system,
+      )
+    : settings.systems
+  return {
+    ...scene,
+    version: 5,
+    settings: { ...settings, systems },
+    obstacles: [],
+    zones: [],
+    rules: [],
+  }
+}
+
+const MIGRATIONS: Record<number, (scene: Obj) => Obj> = {
+  1: v1ToV2,
+  2: v2ToV3,
+  3: v3ToV4,
+  4: v4ToV5,
+}
 
 /**
  * Upgrades stored scene JSON of an older version to the current version, step by step.

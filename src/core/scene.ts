@@ -10,7 +10,7 @@
  */
 
 /** Current scene schema version. Bump when the stored shape changes. */
-export const SCENE_VERSION = 4
+export const SCENE_VERSION = 5
 
 /** Length unit used throughout the scene. */
 export type SceneUnits = 'mm'
@@ -61,6 +61,11 @@ export interface SystemDef {
   /** Display colour, `#rrggbb`. */
   color: string
   lineStyle: LineStyle
+  /**
+   * Insulation thickness (mm) entered by the user; 0 = none. Spacing and clashes use the
+   * outer pipe diameter plus twice this value.
+   */
+  insulationThickness: number
 }
 
 /** Point in equipment-local or world space, integer millimetres. */
@@ -199,6 +204,107 @@ export interface Pipe {
   routeError?: string
 }
 
+/**
+ * Upright box in the plan, used by obstacles and zones: centre of the footprint, size
+ * along its own axes (width along x at rotation 0), whole-degree rotation counter-clockwise
+ * (0-359), bottom height above the floor and height.
+ */
+export interface PlanBox {
+  center: Point
+  width: number
+  depth: number
+  rotation: number
+  bottom: number
+  height: number
+}
+
+export type ObstacleCategory = 'electrical' | 'duct' | 'structure' | 'other'
+
+/**
+ * Something in the room that is not drawn as equipment (duct, cable tray, electrical
+ * cabinet, column, beam). Pipes keep clear of it. `tag` is an exact identifier (OV-01),
+ * unique together with equipment and terminal tags.
+ */
+export interface Obstacle extends PlanBox {
+  id: string
+  tag: string
+  name: string
+  category: ObstacleCategory
+}
+
+/** forbidden: no pipe inside; avoid: more expensive; preferred: cheaper (e.g. a corridor). */
+export type ZoneKind = 'forbidden' | 'avoid' | 'preferred'
+
+export interface Zone extends PlanBox {
+  id: string
+  name: string
+  kind: ZoneKind
+}
+
+/**
+ * Rule of the project, entered by the user with its source (standard and clause, project
+ * brief, internal practice). The app contains no built-in values. A rule takes effect only
+ * when it is active, has a source and has all its values (`null` = not entered).
+ * `hard` rules are prohibitions, soft rules a cost. A system id of `null` means all systems.
+ */
+interface RuleBase {
+  id: string
+  active: boolean
+  source: string
+  hard: boolean
+}
+
+export type CrossingElement = 'door' | 'window' | 'wall'
+
+export type RoutingRule = RuleBase &
+  (
+    | {
+        /** Clear gap between pipes of system A and system B (surfaces incl. insulation). */
+        kind: 'minSpacing'
+        systemA: string | null
+        systemB: string | null
+        distance: number | null
+      }
+    | {
+        /**
+         * Where horizontal runs of `upper` and `lower` run side by side (plan distance between
+         * axes up to `parallelWithin`), `upper` must be the higher one.
+         */
+        kind: 'verticalOrder'
+        upper: string | null
+        lower: string | null
+        parallelWithin: number | null
+      }
+    | {
+        /** Clear gap between pipes of the system (surface) and obstacles of a category. */
+        kind: 'obstacleDistance'
+        systemId: string | null
+        category: ObstacleCategory
+        distance: number | null
+      }
+    | {
+        /** Horizontal runs of the system only with their axis between min and max. */
+        kind: 'heightRange'
+        systemId: string | null
+        min: number | null
+        max: number | null
+      }
+    | {
+        /** Pipes of the system may not pass through doors / windows / walls. */
+        kind: 'noCrossing'
+        systemId: string | null
+        element: CrossingElement
+      }
+    | {
+        /** At most `max` bends per pipe; always a warning only. */
+        kind: 'maxBends'
+        systemId: string | null
+        max: number | null
+      }
+  )
+
+export type RuleKind = RoutingRule['kind']
+
 /** Size used for newly placed openings of one type. */
 export interface OpeningPreset {
   width: number
@@ -236,6 +342,10 @@ export interface Scene {
   equipment: Equipment[]
   terminals: WallTerminal[]
   pipes: Pipe[]
+  obstacles: Obstacle[]
+  zones: Zone[]
+  /** Rules of the project (entered by the user; empty at the start). */
+  rules: RoutingRule[]
 }
 
 /**
@@ -249,10 +359,34 @@ export const INITIAL_SETTINGS: SceneSettings = {
   window: { width: 1200, height: 1200, sillHeight: 900 },
   gridSize: 50,
   systems: [
-    { id: 'supply', name: 'Dvižni vod', color: '#d62728', lineStyle: 'solid' },
-    { id: 'return', name: 'Povratek', color: '#1f77b4', lineStyle: 'dashed' },
-    { id: 'dhw', name: 'Topla sanitarna voda', color: '#ff7f0e', lineStyle: 'dashdot' },
-    { id: 'cold', name: 'Hladna voda', color: '#2ca02c', lineStyle: 'solid' },
+    {
+      id: 'supply',
+      name: 'Dvižni vod',
+      color: '#d62728',
+      lineStyle: 'solid',
+      insulationThickness: 0,
+    },
+    {
+      id: 'return',
+      name: 'Povratek',
+      color: '#1f77b4',
+      lineStyle: 'dashed',
+      insulationThickness: 0,
+    },
+    {
+      id: 'dhw',
+      name: 'Topla sanitarna voda',
+      color: '#ff7f0e',
+      lineStyle: 'dashdot',
+      insulationThickness: 0,
+    },
+    {
+      id: 'cold',
+      name: 'Hladna voda',
+      color: '#2ca02c',
+      lineStyle: 'solid',
+      insulationThickness: 0,
+    },
   ],
   routingGrid: 50,
   portStraight: 100,
@@ -280,6 +414,9 @@ export function createEmptyScene(settings: SceneSettings = initialSettings()): S
     equipment: [],
     terminals: [],
     pipes: [],
+    obstacles: [],
+    zones: [],
+    rules: [],
   }
 }
 

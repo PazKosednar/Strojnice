@@ -127,9 +127,21 @@ describe('migrateScene v2 -> v3', () => {
   it('adds line styles, keeping names and colours the user edited', () => {
     const migrated = migrateScene(clone(v2Scene)) as { settings: { systems: unknown } }
     expect(migrated.settings.systems).toEqual([
-      { id: 'supply', name: 'Ogrevanje', color: '#aa0000', lineStyle: 'solid' },
-      { id: 'return', name: 'Povratek', color: '#1f77b4', lineStyle: 'dashed' },
-      { id: 'gas', name: 'Plin', color: '#ffcc00', lineStyle: 'solid' },
+      {
+        id: 'supply',
+        name: 'Ogrevanje',
+        color: '#aa0000',
+        lineStyle: 'solid',
+        insulationThickness: 0,
+      },
+      {
+        id: 'return',
+        name: 'Povratek',
+        color: '#1f77b4',
+        lineStyle: 'dashed',
+        insulationThickness: 0,
+      },
+      { id: 'gas', name: 'Plin', color: '#ffcc00', lineStyle: 'solid', insulationThickness: 0 },
     ])
   })
 
@@ -154,6 +166,9 @@ describe('parseScene on stored older scenes', () => {
       version: SCENE_VERSION,
       settings: { ...v1Scene.settings, systems: INITIAL_SETTINGS.systems, ...routingDefaults },
       terminals: [],
+      obstacles: [],
+      zones: [],
+      rules: [],
     })
   })
 
@@ -167,11 +182,96 @@ describe('parseScene on stored older scenes', () => {
   })
 })
 
+/** A phase-3 scene as stored (version 4): pipes with routes, a terminal, a model. */
+const v4Scene = {
+  version: 4,
+  units: 'mm',
+  settings: {
+    ...v1Scene.settings,
+    systems: [
+      { id: 'supply', name: 'Dvižni vod', color: '#d62728', lineStyle: 'solid' },
+      { id: 'cold', name: 'Hladna voda', color: '#2ca02c', lineStyle: 'solid' },
+    ],
+    routingGrid: 50,
+    portStraight: 100,
+    pipeSpacing: 40,
+  },
+  walls: v1Scene.walls,
+  openings: v1Scene.openings,
+  equipment: [
+    {
+      ...v2Scene.equipment[0]!,
+      type: {
+        ...v2Scene.equipment[0]!.type,
+        ports: [{ ...v2Scene.equipment[0]!.type.ports[0]!, outerDiameter: 22 }],
+        model: {
+          path: 'library/viessmann/Vitocal-250-A_IDU-A.glb',
+          fileName: 'Vitocal-250-A_IDU-A.glb',
+          rotation: 0,
+          bounds: { min: { x: -225, y: 0, z: -183 }, max: { x: 225, y: 932, z: 183 } },
+        },
+      },
+    },
+  ],
+  terminals: [
+    {
+      id: 't1',
+      tag: 'IZ-01',
+      wallId: 'w1',
+      offset: 2000,
+      height: 300,
+      systemId: 'cold',
+      outerDiameter: 22,
+    },
+  ],
+  pipes: [
+    {
+      id: 'p1',
+      systemId: 'cold',
+      from: { kind: 'terminal', terminalId: 't1' },
+      to: { kind: 'port', equipmentId: 'e1', portId: 'p1' },
+      outerDiameter: 22,
+      route: [
+        { x: 2000, y: 0, z: 300 },
+        { x: 2000, y: 200, z: 300 },
+        { x: 1000, y: 200, z: 300 },
+      ],
+      mode: 'manual',
+    },
+  ],
+}
+
 describe('migrateScene v3 -> v4', () => {
   it('only bumps the version (3D models are an optional new field)', () => {
-    const v3 = { ...(migrateScene(clone(v2Scene)) as object), version: 3 }
-    const v4 = migrateScene(clone(v3)) as Record<string, unknown>
-    expect(v4.version).toBe(4)
-    expect({ ...v4, version: 3 }).toEqual(v3)
+    // A v3 scene has the same shape as a v4 one; both reach the same current scene.
+    const fromV3 = migrateScene(clone({ ...v4Scene, version: 3 }))
+    expect(fromV3).toEqual(migrateScene(clone(v4Scene)))
+  })
+})
+
+describe('migrateScene v4 -> v5', () => {
+  it('adds insulation 0 to every system and empty obstacles, zones and rules', () => {
+    const v5 = migrateScene(clone(v4Scene)) as Record<string, unknown> & typeof v4Scene
+    expect(v5.version).toBe(5)
+    expect(v5.settings.systems).toEqual(
+      v4Scene.settings.systems.map((s) => ({ ...s, insulationThickness: 0 })),
+    )
+    expect(v5).toMatchObject({ obstacles: [], zones: [], rules: [] })
+  })
+
+  it('loads a phase-3 project unchanged (walls, equipment, terminals, pipes, settings)', () => {
+    const result = parseScene(clone(v4Scene))
+    if (!result.ok) throw new Error(result.error)
+    const { scene } = result
+    expect(scene.version).toBe(SCENE_VERSION)
+    expect(scene.walls).toEqual(v4Scene.walls)
+    expect(scene.openings).toEqual(v4Scene.openings)
+    expect(scene.equipment).toEqual(v4Scene.equipment)
+    expect(scene.terminals).toEqual(v4Scene.terminals)
+    expect(scene.pipes).toEqual(v4Scene.pipes)
+    expect({ ...scene.settings, systems: undefined }).toEqual({
+      ...v4Scene.settings,
+      systems: undefined,
+    })
   })
 })

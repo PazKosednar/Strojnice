@@ -26,8 +26,11 @@ export function nextTag(prefix: string, existingTags: readonly string[]): string
 export function allTags(scene: {
   equipment: readonly { id: string; tag: string }[]
   terminals: readonly { id: string; tag: string }[]
+  obstacles?: readonly { id: string; tag: string }[]
 }): { id: string; tag: string }[] {
-  return [...scene.equipment, ...scene.terminals].map(({ id, tag }) => ({ id, tag }))
+  return [...scene.equipment, ...scene.terminals, ...(scene.obstacles ?? [])].map(
+    ({ id, tag }) => ({ id, tag }),
+  )
 }
 
 /** True when no other item (ignoring `exceptId`) uses exactly this tag. */

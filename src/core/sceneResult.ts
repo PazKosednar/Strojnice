@@ -32,6 +32,10 @@ export type SceneError =
   | 'invalidRoute'
   /** Terminal offset/height/diameter/system is not valid for its wall. */
   | 'invalidTerminal'
+  /** Obstacle or zone size, rotation or height is not valid. */
+  | 'invalidBox'
+  /** A rule value is not a whole mm value, or a height range is upside down. */
+  | 'invalidRule'
 
 /** Result of a scene operation: a new scene, or the reason it was rejected. */
 export type SceneResult = { ok: true; scene: Scene } | { ok: false; error: SceneError }
