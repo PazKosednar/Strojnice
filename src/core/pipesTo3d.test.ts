@@ -35,7 +35,7 @@ function sceneWithPipe(route: Pipe['route'], systemId = 'supply'): Scene {
 }
 
 describe('pipesTo3d', () => {
-  it('turns each route segment into a cylinder in metres (plan y -> world -z)', () => {
+  it('turns each route segment into a cylinder in metres, shortened for the bends', () => {
     const { segments } = pipesTo3d(
       sceneWithPipe([
         { x: 1000, y: 500, z: 300 },
@@ -44,24 +44,45 @@ describe('pipesTo3d', () => {
       ]),
     )
     expect(segments).toHaveLength(2)
+    // Bend radius 1.5 × 28 mm = 42 mm at the corner.
     close(segments[0]!.start, [1, 0.3, -0.5])
-    close(segments[0]!.end, [2, 0.3, -0.5])
+    close(segments[0]!.end, [1.958, 0.3, -0.5])
+    close(segments[1]!.start, [2, 0.342, -0.5])
     close(segments[1]!.end, [2, 1.2, -0.5])
     expect(segments[0]!.radius).toBeCloseTo(0.014)
     expect(segments[0]!.color).toBe('#d62728')
   })
 
-  it('puts a sphere at every bend but not at the ends', () => {
-    const { joints } = pipesTo3d(
+  it('draws a quarter-torus elbow at every bend that joins both runs', () => {
+    const { elbows, joints, segments } = pipesTo3d(
       sceneWithPipe([
         { x: 0, y: 0, z: 0 },
-        { x: 100, y: 0, z: 0 },
-        { x: 100, y: 100, z: 0 },
-        { x: 100, y: 100, z: 100 },
+        { x: 1000, y: 0, z: 0 },
+        { x: 1000, y: 1000, z: 0 },
+        { x: 1000, y: 1000, z: 1000 },
       ]),
     )
-    expect(joints.map((j) => j.key)).toEqual(['p:j1', 'p:j2'])
-    close(joints[0]!.center, [0.1, 0, 0])
+    expect(joints).toEqual([])
+    expect(elbows.map((e) => e.key)).toEqual(['p:e1', 'p:e2'])
+    const e = elbows[0]!
+    const at = (axis: readonly number[]) =>
+      e.center.map((c, k) => c + axis[k]! * e.bendRadius) as [number, number, number]
+    // The arc starts where the incoming run ends and ends where the outgoing one starts.
+    close(at(e.xAxis), segments[0]!.end)
+    close(at(e.yAxis), segments[1]!.start)
+    expect(e.bendRadius).toBeCloseTo(0.042)
+  })
+
+  it('keeps a sphere where the runs are too short for an elbow', () => {
+    const { elbows, joints } = pipesTo3d(
+      sceneWithPipe([
+        { x: 0, y: 0, z: 0 },
+        { x: 20, y: 0, z: 0 },
+        { x: 20, y: 1000, z: 0 },
+      ]),
+    )
+    expect(elbows).toEqual([])
+    expect(joints.map((j) => j.key)).toEqual(['p:j1'])
   })
 
   it('draws nothing for a pipe without a route and uses grey for unknown systems', () => {

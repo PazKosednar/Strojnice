@@ -1,4 +1,3 @@
-import { Edges } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import type { Group, Mesh, MeshStandardMaterial, Vector3 } from 'three'
@@ -6,8 +5,49 @@ import type { Box3d } from '../core/sceneToBoxes'
 import type { WallFacing } from '../core/wallVisibility'
 import { isTopView, isWallHidden } from '../core/wallVisibility'
 import type { WallViewMode } from '../stores/editorStore'
+import { illustrationTextures, metricBox } from './textures'
 
-const COLORS = { wall: '#d9d6cf', selected: '#9cc0ff', edges: '#6b7280' }
+/** Tint of a selected wall (multiplies the texture). */
+const SELECTED_TINT = '#9cc0ff'
+/** Thickness of the drawn brick outer leaf (m); the rest is the block inner leaf. */
+const BRICK_LEAF = 0.11
+
+/**
+ * One wall piece in the illustrated look: a brick outer leaf on the outward side and a
+ * light block inner leaf. Only a picture: the wall is one element of the model.
+ */
+function WallPiece({ box, selected }: { box: Box3d; selected: boolean }) {
+  const [length, height, thickness] = box.size
+  const brick = box.outward === 0 ? 0 : Math.min(BRICK_LEAF, thickness / 2)
+  const inner = thickness - brick
+  const side = box.outward === 0 ? 1 : box.outward
+  const textures = illustrationTextures()
+  const outerGeometry = useMemo(
+    () => (brick > 0 ? metricBox(length, height, brick) : null),
+    [length, height, brick],
+  )
+  const innerGeometry = useMemo(() => metricBox(length, height, inner), [length, height, inner])
+  useEffect(
+    () => () => {
+      outerGeometry?.dispose()
+      innerGeometry.dispose()
+    },
+    [outerGeometry, innerGeometry],
+  )
+  const tint = selected ? SELECTED_TINT : '#ffffff'
+  return (
+    <group position={box.center} rotation-y={box.rotationY}>
+      {outerGeometry && (
+        <mesh geometry={outerGeometry} position={[0, 0, side * (thickness / 2 - brick / 2)]}>
+          <meshStandardMaterial map={textures.brick} color={tint} roughness={0.9} transparent />
+        </mesh>
+      )}
+      <mesh geometry={innerGeometry} position={[0, 0, -side * (thickness / 2 - inner / 2)]}>
+        <meshStandardMaterial map={textures.block} color={tint} roughness={0.95} transparent />
+      </mesh>
+    </group>
+  )
+}
 /** Opacity of front walls in the "transparent" mode. */
 const TRANSPARENT_OPACITY = 0.18
 
@@ -91,7 +131,7 @@ export function Walls3D({ boxes, baseBoxes, facings, mode, selectedWallId }: Pro
   return (
     <group>
       {wallIds.map((id) => {
-        const color = id === selectedWallId ? COLORS.selected : COLORS.wall
+        const selected = id === selectedWallId
         return (
           <group key={id}>
             <group
@@ -101,11 +141,7 @@ export function Walls3D({ boxes, baseBoxes, facings, mode, selectedWallId }: Pro
               }}
             >
               {byWall(boxes, id).map((box) => (
-                <mesh key={box.key} position={box.center} rotation-y={box.rotationY}>
-                  <boxGeometry args={box.size} />
-                  <meshStandardMaterial color={color} roughness={0.9} transparent />
-                  <Edges color={COLORS.edges} />
-                </mesh>
+                <WallPiece key={box.key} box={box} selected={selected} />
               ))}
             </group>
             <group
@@ -116,11 +152,7 @@ export function Walls3D({ boxes, baseBoxes, facings, mode, selectedWallId }: Pro
               }}
             >
               {byWall(baseBoxes, id).map((box) => (
-                <mesh key={box.key} position={box.center} rotation-y={box.rotationY}>
-                  <boxGeometry args={box.size} />
-                  <meshStandardMaterial color={color} roughness={0.9} />
-                  <Edges color={COLORS.edges} />
-                </mesh>
+                <WallPiece key={box.key} box={box} selected={selected} />
               ))}
             </group>
           </group>

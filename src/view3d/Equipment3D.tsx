@@ -6,10 +6,10 @@ import { ModelMesh } from './ModelMesh'
 import { TagLabel } from './TagLabel'
 
 const COLORS = {
-  body: '#c9d6e8',
+  body: '#f2f3f1',
   selected: '#9cc0ff',
   conflict: '#f1b0b0',
-  edges: '#475569',
+  edges: '#c3c6c4',
 }
 
 const UP = new Vector3(0, 1, 0)
@@ -49,7 +49,7 @@ export function Equipment3D({ item, selected, conflict, hiddenSystems }: Props) 
   const body = (
     <mesh position={item.center} rotation-y={item.rotationY}>
       {geometry}
-      <meshStandardMaterial color={color} roughness={0.75} />
+      <meshStandardMaterial color={color} roughness={0.45} metalness={0.05} />
       <Edges color={COLORS.edges} />
     </mesh>
   )

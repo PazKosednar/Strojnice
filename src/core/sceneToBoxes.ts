@@ -1,6 +1,7 @@
 import type { Opening, PlanBox, Scene, Wall, ZoneKind } from './scene'
 import { wallAngle, wallDirection, wallLength } from './wallGeometry'
 import { wallExtensions, wallOutline, type WallExtension } from './wallJoins'
+import { wallFacings, type WallFacing } from './wallVisibility'
 
 /** [x, y, z] in metres. */
 export type Vec3 = [number, number, number]
@@ -18,6 +19,11 @@ export interface Box3d {
   center: Vec3
   size: Vec3
   rotationY: number
+  /**
+   * Walls: +1 when the box's local +z side faces out of the room, -1 when -z does (for the
+   * brick outer leaf and the block inner leaf); 0 for other boxes.
+   */
+  outward: 1 | -1 | 0
 }
 
 const MM = 1 / 1000
@@ -49,9 +55,18 @@ function wallPieces(wall: Wall, openings: readonly Opening[], ext: WallExtension
   return pieces
 }
 
-function wallBoxes(wall: Wall, openings: readonly Opening[], ext: WallExtension): Box3d[] {
+function wallBoxes(
+  wall: Wall,
+  openings: readonly Opening[],
+  ext: WallExtension,
+  facing: WallFacing | undefined,
+): Box3d[] {
   const d = wallDirection(wall)
   const rotationY = wallAngle(wall)
+  // Local +z of a box turned by rotationY points to plan (sin, -cos): the right side of the wall.
+  const right = { x: Math.sin(rotationY), y: -Math.cos(rotationY) }
+  const outward: 1 | -1 =
+    facing && facing.normal.x * right.x + facing.normal.y * right.y < 0 ? -1 : 1
   return wallPieces(wall, openings, ext).map((p, i) => {
     const mid = (p.u0 + p.u1) / 2
     const px = wall.start.x + d.x * mid
@@ -63,6 +78,7 @@ function wallBoxes(wall: Wall, openings: readonly Opening[], ext: WallExtension)
       center: [px * MM, ((p.z0 + p.z1) / 2) * MM, -py * MM + 0],
       size: [(p.u1 - p.u0) * MM, (p.z1 - p.z0) * MM, wall.thickness * MM],
       rotationY,
+      outward,
     }
   })
 }
@@ -83,17 +99,20 @@ function floorBox(scene: Scene, extensions: Map<string, WallExtension>): Box3d |
     center: [((minX + maxX) / 2) * MM, -FLOOR_THICKNESS / 2, (-(minY + maxY) / 2) * MM + 0],
     size: [(maxX - minX) * MM, FLOOR_THICKNESS, (maxY - minY) * MM],
     rotationY: 0,
+    outward: 0,
   }
 }
 
 /** Converts the scene into boxes for the 3D view: wall pieces around openings + a floor. */
 export function sceneToBoxes(scene: Scene): Box3d[] {
   const extensions = wallExtensions(scene.walls)
+  const facings = new Map(wallFacings(scene).map((f) => [f.id, f]))
   const boxes = scene.walls.flatMap((wall) =>
     wallBoxes(
       wall,
       scene.openings.filter((o) => o.wallId === wall.id),
       extensions.get(wall.id) ?? { start: 0, end: 0 },
+      facings.get(wall.id),
     ),
   )
   const floor = floorBox(scene, extensions)

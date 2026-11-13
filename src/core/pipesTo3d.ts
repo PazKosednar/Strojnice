@@ -24,9 +24,30 @@ export interface PipeJoint3d {
   color: string
 }
 
+/**
+ * Smooth 90° bend: a quarter of a torus. Its arc lies in the plane of `xAxis` and `yAxis`
+ * around `center`: from center + xAxis·bendRadius (end of the incoming run) to
+ * center + yAxis·bendRadius (start of the outgoing run).
+ */
+export interface PipeElbow3d {
+  key: string
+  pipeId: string
+  systemId: string
+  center: Vec3
+  xAxis: Vec3
+  yAxis: Vec3
+  /** Radius of the bend centre line (m). */
+  bendRadius: number
+  /** Pipe radius (m). */
+  radius: number
+  color: string
+}
+
 export interface Pipes3d {
   segments: PipeSegment3d[]
+  /** Bends where the runs are too short for an elbow: a sphere. */
   joints: PipeJoint3d[]
+  elbows: PipeElbow3d[]
   /** Short stubs out of wall terminals (from the wall axis to just beyond the face). */
   terminals: PipeSegment3d[]
 }
@@ -39,38 +60,76 @@ export const UNKNOWN_PIPE_COLOR = '#888888'
 /** How far a terminal stub sticks out of the wall face (mm). */
 export const TERMINAL_STUB_OUT = 60
 
-/** Converts routed pipes and wall terminals into cylinders and spheres for the 3D view. */
+/**
+ * Centre-line radius of the drawn bends as a multiple of the outer diameter. A drawing
+ * value for a realistic look (copper press bends are of this order), not a standard.
+ */
+export const BEND_RADIUS_FACTOR = 1.5
+
+const unit = (a: Point3, b: Point3): Point3 => {
+  const l = Math.abs(b.x - a.x) + Math.abs(b.y - a.y) + Math.abs(b.z - a.z)
+  return { x: (b.x - a.x) / l, y: (b.y - a.y) / l, z: (b.z - a.z) / l }
+}
+const dist = (a: Point3, b: Point3) =>
+  Math.abs(b.x - a.x) + Math.abs(b.y - a.y) + Math.abs(b.z - a.z)
+const move = (p: Point3, d: Point3, mm: number): Point3 => ({
+  x: p.x + d.x * mm,
+  y: p.y + d.y * mm,
+  z: p.z + d.z * mm,
+})
+/** Plan direction -> three.js direction. */
+const dirToWorld = (d: Point3): Vec3 => [d.x + 0, d.z + 0, -d.y + 0]
+
+/** Converts routed pipes and wall terminals into cylinders, bends and stubs for the 3D view. */
 export function pipesTo3d(scene: Scene): Pipes3d {
   const colors = new Map(scene.settings.systems.map((s) => [s.id, s.color]))
   const color = (systemId: string) => colors.get(systemId) ?? UNKNOWN_PIPE_COLOR
   const segments: PipeSegment3d[] = []
   const joints: PipeJoint3d[] = []
 
+  const elbows: PipeElbow3d[] = []
+
   for (const pipe of scene.pipes) {
+    const route = pipe.route
     const radius = (pipe.outerDiameter / 2) * MM
-    pipe.route.forEach((p, i) => {
-      const q = pipe.route[i + 1]
+    const base = { pipeId: pipe.id, systemId: pipe.systemId, radius, color: color(pipe.systemId) }
+    // Bend radius at every inner point (mm): limited by half of each neighbouring run.
+    const bend = route.map((p, i) => {
+      const prev = route[i - 1]
+      const next = route[i + 1]
+      if (!prev || !next) return 0
+      return Math.min(BEND_RADIUS_FACTOR * pipe.outerDiameter, dist(prev, p) / 2, dist(p, next) / 2)
+    })
+    route.forEach((p, i) => {
+      const q = route[i + 1]
       if (q) {
+        const d = unit(p, q)
         segments.push({
+          ...base,
           key: `${pipe.id}:s${i}`,
-          pipeId: pipe.id,
-          systemId: pipe.systemId,
-          start: toWorld(p),
-          end: toWorld(q),
-          radius,
-          color: color(pipe.systemId),
+          start: toWorld(move(p, d, bend[i]!)),
+          end: toWorld(move(q, d, -bend[i + 1]!)),
         })
       }
-      if (i > 0 && q) {
-        joints.push({
-          key: `${pipe.id}:j${i}`,
-          pipeId: pipe.id,
-          systemId: pipe.systemId,
-          center: toWorld(p),
-          radius,
-          color: color(pipe.systemId),
-        })
+      const prev = route[i - 1]
+      if (!prev || !q) return
+      const r = bend[i]!
+      // Too tight for a visible arc: a sphere closes the joint instead.
+      if (r < pipe.outerDiameter / 2) {
+        joints.push({ ...base, key: `${pipe.id}:j${i}`, center: toWorld(p) })
+        return
       }
+      const a = unit(prev, p)
+      const b = unit(p, q)
+      elbows.push({
+        ...base,
+        key: `${pipe.id}:e${i}`,
+        center: toWorld(move(move(p, a, -r), b, r)),
+        // From the centre: -b points to the end of the incoming run, a to the outgoing one.
+        xAxis: dirToWorld({ x: -b.x, y: -b.y, z: -b.z }),
+        yAxis: dirToWorld(a),
+        bendRadius: r * MM,
+      })
     })
   }
 
@@ -102,5 +161,5 @@ export function pipesTo3d(scene: Scene): Pipes3d {
       color: color(terminal.systemId),
     })
   }
-  return { segments, joints, terminals }
+  return { segments, joints, elbows, terminals }
 }

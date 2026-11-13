@@ -12,14 +12,8 @@ import { CameraRig } from './CameraRig'
 import { Equipment3D } from './Equipment3D'
 import { Pipes3D } from './Pipes3D'
 import { Highlight3D, Space3D } from './Space3D'
+import { Floor, StudioLights } from './Studio'
 import { Walls3D } from './Walls3D'
-
-const COLORS = {
-  wall: '#d9d6cf',
-  wallSelected: '#9cc0ff',
-  floor: '#b8bcc2',
-  edges: '#6b7280',
-}
 
 /**
  * 3D view of the scene in the editor store. Pure projection: it derives primitives from the
@@ -42,6 +36,7 @@ export default function View3D() {
     return {
       segments: all.segments.filter((s) => ids.has(s.pipeId)),
       joints: all.joints.filter((j) => ids.has(j.pipeId)),
+      elbows: all.elbows.filter((e) => ids.has(e.pipeId)),
       terminals: [],
     }
   }, [preview, previewIds])
@@ -51,6 +46,7 @@ export default function View3D() {
   const facings = useMemo(() => wallFacings(scene), [scene])
   const hiddenSystems = useEditorStore((s) => s.hiddenSystems)
   const wallViewMode = useEditorStore((s) => s.wallViewMode)
+  const pipeLook = useEditorStore((s) => s.pipeLook)
   const [resetToken, setResetToken] = useState(0)
 
   return (
@@ -58,21 +54,12 @@ export default function View3D() {
       <Canvas
         frameloop="demand"
         dpr={[1, 2]}
-        camera={{ fov: 45, near: 0.05, far: 500, position: [6, 6, 8] }}
+        camera={{ fov: 35, near: 0.05, far: 500, position: [6, 6, 8] }}
         aria-label="3D pogled"
       >
-        <color attach="background" args={['#eef1f5']} />
-        <hemisphereLight args={['#ffffff', '#8d8d8d', 1.2]} />
-        <directionalLight position={[6, 12, 8]} intensity={1.6} />
-        <directionalLight position={[-8, 6, -4]} intensity={0.5} />
-        {boxes
-          .filter((box) => box.kind === 'floor')
-          .map((box) => (
-            <mesh key={box.key} position={box.center} rotation-y={box.rotationY}>
-              <boxGeometry args={box.size} />
-              <meshStandardMaterial color={COLORS.floor} roughness={0.9} />
-            </mesh>
-          ))}
+        <color attach="background" args={['#f3f4f2']} />
+        <StudioLights />
+        <Floor floor={boxes.find((box) => box.kind === 'floor')} />
         <Walls3D
           boxes={wallBoxes}
           baseBoxes={baseBoxes}
@@ -84,6 +71,7 @@ export default function View3D() {
           pipes={pipes}
           hiddenSystems={hiddenSystems}
           selectedPipeId={selection?.kind === 'pipe' ? selection.id : null}
+          look={pipeLook}
         />
         {equipment.map((item) => (
           <Equipment3D
@@ -99,6 +87,7 @@ export default function View3D() {
             pipes={proposedPipes}
             hiddenSystems={hiddenSystems}
             selectedPipeId={null}
+            look={pipeLook}
             ghost
           />
         )}

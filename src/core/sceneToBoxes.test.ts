@@ -126,7 +126,15 @@ describe('boxesBounds', () => {
 describe('boxesBounds radius', () => {
   it('is half the diagonal of the bounding box', () => {
     const bounds = boxesBounds([
-      { key: 'a', kind: 'wall', elementId: 'a', center: [0, 0, 0], size: [2, 2, 2], rotationY: 0 },
+      {
+        key: 'a',
+        kind: 'wall',
+        elementId: 'a',
+        center: [0, 0, 0],
+        size: [2, 2, 2],
+        rotationY: 0,
+        outward: 1,
+      },
     ])!
     expect(bounds.radius).toBeCloseTo(Math.sqrt(3))
   })
@@ -200,5 +208,33 @@ describe('spaceToBoxes', () => {
 
   it('places a point with height', () => {
     expect(pointTo3d({ x: 1000, y: 500, z: 2000 })).toEqual([1, 2, -0.5])
+  })
+})
+
+describe('wall boxes: outward side', () => {
+  it('tells which local z side faces out of the room, whatever the wall direction', () => {
+    let n = 0
+    const scene = createEmptyScene()
+    const walls = createRectangularRoom(3200, 1800, scene.settings, () => `w${++n}`)
+    const out = (ws: Wall[]) =>
+      sceneToBoxes({ ...scene, walls: ws })
+        .filter((b) => b.kind === 'wall')
+        .map((b) => {
+          // Local +z in plan coordinates is (sin, -cos) of the rotation.
+          const plus = { x: Math.sin(b.rotationY), y: -Math.cos(b.rotationY) }
+          return { id: b.elementId, plus, outward: b.outward }
+        })
+    for (const box of out(walls)) {
+      const wall = walls.find((w) => w.id === box.id)!
+      const mid = { x: (wall.start.x + wall.end.x) / 2, y: (wall.start.y + wall.end.y) / 2 }
+      const towardsOutside = { x: mid.x - 1600, y: mid.y - 900 }
+      const side = box.plus.x * towardsOutside.x + box.plus.y * towardsOutside.y > 0 ? 1 : -1
+      expect(box.outward).toBe(side)
+    }
+    // A wall drawn the other way round flips the sign.
+    const reversed = walls.map((w, i) => (i === 0 ? { ...w, start: w.end, end: w.start } : w))
+    const first = out(walls).find((b) => b.id === walls[0]!.id)!
+    const flipped = out(reversed).find((b) => b.id === walls[0]!.id)!
+    expect(flipped.outward).toBe(-first.outward)
   })
 })
