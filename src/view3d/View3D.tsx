@@ -3,13 +3,14 @@ import { Canvas } from '@react-three/fiber'
 import { useMemo, useState } from 'react'
 import { equipmentTo3d } from '../core/equipmentTo3d'
 import { pipesTo3d } from '../core/pipesTo3d'
-import { sceneToBoxes, wallBaseBoxes } from '../core/sceneToBoxes'
+import { pointTo3d, sceneToBoxes, spaceToBoxes, wallBaseBoxes } from '../core/sceneToBoxes'
 import { WALL_BASE_HEIGHT, wallFacings } from '../core/wallVisibility'
 import { equipmentWithConflicts, sceneWarnings } from '../core/sceneWarnings'
 import { selectScene, useEditorStore } from '../stores/editorStore'
 import { CameraRig } from './CameraRig'
 import { Equipment3D } from './Equipment3D'
 import { Pipes3D } from './Pipes3D'
+import { Highlight3D, Space3D } from './Space3D'
 import { Walls3D } from './Walls3D'
 
 const COLORS = {
@@ -30,6 +31,8 @@ export default function View3D() {
   const equipment = useMemo(() => equipmentTo3d(scene), [scene])
   const conflicts = useMemo(() => equipmentWithConflicts(sceneWarnings(scene)), [scene])
   const pipes = useMemo(() => pipesTo3d(scene), [scene])
+  const space = useMemo(() => spaceToBoxes(scene), [scene])
+  const highlight = useEditorStore((s) => s.highlight)
   const wallBoxes = useMemo(() => boxes.filter((b) => b.kind === 'wall'), [boxes])
   const baseBoxes = useMemo(() => wallBaseBoxes(boxes, WALL_BASE_HEIGHT), [boxes])
   const facings = useMemo(() => wallFacings(scene), [scene])
@@ -78,6 +81,13 @@ export default function View3D() {
             hiddenSystems={hiddenSystems}
           />
         ))}
+        <Space3D
+          boxes={space}
+          selectedId={
+            selection?.kind === 'obstacle' || selection?.kind === 'zone' ? selection.id : null
+          }
+        />
+        <Highlight3D position={highlight ? pointTo3d(highlight) : null} />
         <OrbitControls makeDefault enableDamping={false} />
         <CameraRig boxes={boxes} resetToken={resetToken} />
       </Canvas>

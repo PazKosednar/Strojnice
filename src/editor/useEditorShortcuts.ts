@@ -1,10 +1,12 @@
 import { useEffect } from 'react'
 import { removeEquipment, rotateEquipment } from '../core/equipmentOps'
+import { removeObstacle } from '../core/obstacleOps'
 import { removeOpening } from '../core/openingOps'
 import { removePipe } from '../core/pipeOps'
 import { editPipeRoute, removeVertex } from '../core/routeEdit'
 import { removeTerminal } from '../core/terminalOps'
 import { removeWall } from '../core/wallOps'
+import { removeZone } from '../core/zoneOps'
 import { useEditorStore } from '../stores/editorStore'
 import { duplicateSelected } from './equipmentActions'
 
@@ -48,6 +50,10 @@ export function useEditorShortcuts() {
               return removePipe(s, id)
             case 'terminal':
               return removeTerminal(s, id)
+            case 'obstacle':
+              return removeObstacle(s, id)
+            case 'zone':
+              return removeZone(s, id)
             default:
               return removeEquipment(s, id)
           }

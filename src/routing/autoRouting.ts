@@ -16,10 +16,21 @@ function endItem(scene: Scene, end: PipeEnd): unknown {
  * Automatic pipes that must be (re-)routed after a change from `previous` to `next`:
  * - new pipes without a route (and without a stored failure),
  * - pipes whose route no longer meets their ends (equipment or terminal moved/rotated),
- * - failed pipes whose end changed (worth trying again).
+ * - failed pipes whose end changed (worth trying again),
+ * - all of them when what routing depends on changed (obstacles, zones, rules, settings
+ *   such as insulation or pipe spacing).
  * Manual pipes are never touched. Scene objects are immutable, so "changed" is identity.
  */
 export function pipesNeedingRoute(previous: Scene | null, next: Scene): string[] {
+  if (
+    previous &&
+    (previous.obstacles !== next.obstacles ||
+      previous.zones !== next.zones ||
+      previous.rules !== next.rules ||
+      previous.settings !== next.settings)
+  ) {
+    return autoPipeIds(next)
+  }
   return next.pipes
     .filter((pipe) => {
       if (pipe.mode !== 'auto') return false

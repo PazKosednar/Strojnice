@@ -3,11 +3,12 @@ import { CatalogPanel } from '../catalog/CatalogPanel'
 import { sceneWarnings } from '../core/sceneWarnings'
 import { selectScene, useEditorStore } from '../stores/editorStore'
 import { PropertiesPanel } from './PropertiesPanel'
+import { RulesPanel } from './RulesPanel'
 import { WarningsPanel } from './WarningsPanel'
 
-type Tab = 'properties' | 'catalog' | 'warnings'
+type Tab = 'properties' | 'catalog' | 'rules' | 'warnings'
 
-/** Side panel with tabs: properties of the selection, equipment catalogue, warnings. */
+/** Side panel with tabs: properties of the selection, catalogue, project rules, warnings. */
 export function SidePanel() {
   const scene = useEditorStore(selectScene)
   const selection = useEditorStore((s) => s.selection)
@@ -25,6 +26,7 @@ export function SidePanel() {
   const tabs: { key: Tab; label: string }[] = [
     { key: 'properties', label: 'Lastnosti' },
     { key: 'catalog', label: 'Katalog' },
+    { key: 'rules', label: 'Pravila' },
     { key: 'warnings', label: `Opozorila (${warnings.length})` },
   ]
 
@@ -47,6 +49,7 @@ export function SidePanel() {
       <div className="side-panel-body" role="tabpanel">
         {tab === 'properties' && <PropertiesPanel />}
         {tab === 'catalog' && <CatalogPanel />}
+        {tab === 'rules' && <RulesPanel scene={scene} />}
         {tab === 'warnings' && <WarningsPanel scene={scene} warnings={warnings} />}
       </div>
     </aside>

@@ -11,6 +11,7 @@ interface Props {
 /** List of all warnings; a click selects the equipment or pipe it is about. */
 export function WarningsPanel({ scene, warnings }: Props) {
   const select = useEditorStore((s) => s.select)
+  const showPlace = useEditorStore((s) => s.showPlace)
   return (
     <div className="warnings">
       <h2>Opozorila</h2>
@@ -20,7 +21,7 @@ export function WarningsPanel({ scene, warnings }: Props) {
         <>
           <p className="muted small">
             Opozorila ne preprečujejo dela: naprava je lahko namenoma zunaj prostora ali tik ob
-            drugi. Klik izbere napravo oziroma cev.
+            drugi. Klik izbere napravo oziroma cev; pri kršitvi pravila označi še mesto.
           </p>
           <ul className="warning-list">
             {warnings.map((warning, i) => (
@@ -28,7 +29,11 @@ export function WarningsPanel({ scene, warnings }: Props) {
                 <button
                   type="button"
                   className="link"
-                  onClick={() => select(warningTarget(warning))}
+                  onClick={() =>
+                    warning.kind === 'ruleViolation'
+                      ? showPlace(warningTarget(warning), warning.violation.point)
+                      : select(warningTarget(warning))
+                  }
                 >
                   {warningText(warning, scene)}
                 </button>

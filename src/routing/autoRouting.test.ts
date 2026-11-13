@@ -79,6 +79,28 @@ describe('pipesNeedingRoute', () => {
     expect(pipesNeedingRoute(failed, moved)).toEqual(['p'])
   })
 
+  it('re-routes all automatic pipes when obstacles, zones, rules or settings change', () => {
+    const before = routed()
+    const zone = {
+      id: 'z',
+      name: 'Cona',
+      kind: 'forbidden' as const,
+      center: { x: 1600, y: 900 },
+      width: 400,
+      depth: 400,
+      rotation: 0,
+      bottom: 0,
+      height: 2600,
+    }
+    expect(pipesNeedingRoute(before, { ...before, zones: [zone] })).toEqual(['p'])
+    expect(pipesNeedingRoute(before, { ...before, rules: [] })).toEqual(['p'])
+    expect(pipesNeedingRoute(before, { ...before, settings: { ...before.settings } })).toEqual([
+      'p',
+    ])
+    const manual = unwrap(setPipeMode(before, 'p', 'manual'))
+    expect(pipesNeedingRoute(manual, { ...manual, obstacles: [] })).toEqual([])
+  })
+
   it('lists all automatic pipes for re-routing everything', () => {
     expect(autoPipeIds(routed())).toEqual(['p'])
     expect(autoPipeIds(unwrap(setPipeMode(routed(), 'p', 'manual')))).toEqual([])

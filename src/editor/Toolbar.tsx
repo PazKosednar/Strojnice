@@ -4,6 +4,7 @@ import { useEditorStore, type Tool, type WallViewMode } from '../stores/editorSt
 import { RectRoomForm } from './RectRoomForm'
 import { TerminalDraftForm } from './TerminalDraftForm'
 import { SaveStatusIndicator } from './SaveStatusIndicator'
+import { SpaceDraftForm } from './SpaceDraftForm'
 import { SystemLegend } from './SystemLegend'
 
 export type ViewMode = '2d' | 'both' | '3d'
@@ -84,6 +85,16 @@ export function Toolbar({ projectName, viewMode, onViewMode }: Props) {
         >
           Izhod
         </button>
+        <button
+          type="button"
+          aria-pressed={tool === 'obstacle'}
+          onClick={() => setTool('obstacle')}
+        >
+          Ovira
+        </button>
+        <button type="button" aria-pressed={tool === 'zone'} onClick={() => setTool('zone')}>
+          Cona
+        </button>
         <button type="button" aria-pressed={tool === 'delete'} onClick={() => setTool('delete')}>
           Briši
         </button>
@@ -153,6 +164,7 @@ export function Toolbar({ projectName, viewMode, onViewMode }: Props) {
       </div>
       {roomFormOpen && <RectRoomForm onDone={() => setRoomFormOpen(false)} />}
       {tool === 'terminal' && <TerminalDraftForm />}
+      {(tool === 'obstacle' || tool === 'zone') && <SpaceDraftForm kind={tool} />}
     </div>
   )
 }

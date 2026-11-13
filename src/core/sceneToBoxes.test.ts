@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { createRectangularRoom } from './rectangularRoom'
 import { createEmptyScene, type Opening, type Scene, type Wall } from './scene'
-import { boxesBounds, FLOOR_THICKNESS, sceneToBoxes, wallBaseBoxes } from './sceneToBoxes'
+import {
+  boxesBounds,
+  FLOOR_THICKNESS,
+  pointTo3d,
+  sceneToBoxes,
+  spaceToBoxes,
+  wallBaseBoxes,
+} from './sceneToBoxes'
 
 const freeWall: Wall = {
   id: 'w',
@@ -146,5 +153,52 @@ describe('wallBaseBoxes', () => {
     }
     const base = wallBaseBoxes(sceneToBoxes(sceneWith([freeWall], [door])), 200)
     expect(base).toHaveLength(1)
+  })
+})
+
+describe('spaceToBoxes', () => {
+  it('converts obstacles and zones to metres with the plan y as -z', () => {
+    const scene = {
+      ...createEmptyScene(),
+      obstacles: [
+        {
+          id: 'o',
+          tag: 'OV-01',
+          name: 'El. omarica',
+          category: 'electrical' as const,
+          center: { x: 1000, y: 2000 },
+          width: 600,
+          depth: 200,
+          rotation: 90,
+          bottom: 300,
+          height: 1200,
+        },
+      ],
+      zones: [
+        {
+          id: 'z',
+          name: 'Pred vrati',
+          kind: 'forbidden' as const,
+          center: { x: 0, y: 0 },
+          width: 900,
+          depth: 800,
+          rotation: 0,
+          bottom: 0,
+          height: 2100,
+        },
+      ],
+    }
+    const [obstacle, zone] = spaceToBoxes(scene)
+    expect(obstacle).toMatchObject({ kind: 'obstacle', label: 'OV-01 El. omarica' })
+    expect(obstacle!.center[0]).toBeCloseTo(1)
+    expect(obstacle!.center[1]).toBeCloseTo(0.9)
+    expect(obstacle!.center[2]).toBeCloseTo(-2)
+    expect(obstacle!.size.map((v) => +v.toFixed(3))).toEqual([0.6, 1.2, 0.2])
+    expect(obstacle!.rotationY).toBeCloseTo(Math.PI / 2)
+    expect(zone).toMatchObject({ kind: 'forbidden', label: 'Pred vrati' })
+  })
+
+  it('places a point with height', () => {
+    expect(pointTo3d({ x: 1000, y: 500, z: 2000 })).toEqual([1, 2, -0.5])
   })
 })

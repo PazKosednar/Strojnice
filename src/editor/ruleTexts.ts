@@ -1,6 +1,13 @@
 import type { RuleStatus } from '../core/rules/ruleStatus'
 import type { RuleViolation } from '../core/rules/violation'
-import type { CrossingElement, ObstacleCategory, RoutingRule, RuleKind, Scene } from '../core/scene'
+import type {
+  CrossingElement,
+  ObstacleCategory,
+  RoutingRule,
+  RuleKind,
+  Scene,
+  ZoneKind,
+} from '../core/scene'
 
 export const RULE_KIND_LABELS: Record<RuleKind, string> = {
   minSpacing: 'Najmanjši razmik med sistemoma',
@@ -16,6 +23,12 @@ export const CATEGORY_LABELS: Record<ObstacleCategory, string> = {
   duct: 'kanal',
   structure: 'konstrukcija',
   other: 'drugo',
+}
+
+export const ZONE_KIND_LABELS: Record<ZoneKind, string> = {
+  forbidden: 'prepovedana (cevi ne smejo vanjo)',
+  avoid: 'izogibanja (dražja)',
+  preferred: 'prednostna (cenejša, npr. koridor)',
 }
 
 export const CROSSING_LABELS: Record<CrossingElement, string> = {

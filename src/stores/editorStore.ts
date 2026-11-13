@@ -1,18 +1,34 @@
 import { create } from 'zustand'
-import { createEmptyScene, type EquipmentType, type Scene } from '../core/scene'
+import {
+  createEmptyScene,
+  type EquipmentType,
+  type ObstacleCategory,
+  type Point3,
+  type Scene,
+  type ZoneKind,
+} from '../core/scene'
 import type { SceneResult } from '../core/sceneResult'
 import type { SaveStatus } from '../lib/autosave'
 import { sceneErrorMessage } from '../editor/sceneErrorMessages'
 import { createHistory, pushHistory, redo, replacePresent, undo, type History } from './history'
 
 export type Tool =
-  'select' | 'wall' | 'door' | 'window' | 'equipment' | 'pipe' | 'terminal' | 'delete'
+  | 'select'
+  | 'wall'
+  | 'door'
+  | 'window'
+  | 'equipment'
+  | 'pipe'
+  | 'terminal'
+  | 'obstacle'
+  | 'zone'
+  | 'delete'
 
 /** How the 3D view treats walls between the camera and the room. */
 export type WallViewMode = 'hide' | 'transparent' | 'all'
 
 export type Selection = {
-  kind: 'wall' | 'opening' | 'equipment' | 'terminal' | 'pipe'
+  kind: 'wall' | 'opening' | 'equipment' | 'terminal' | 'pipe' | 'obstacle' | 'zone'
   id: string
 } | null
 
@@ -22,6 +38,12 @@ export type SceneOp = (scene: Scene) => SceneResult
 export interface PipeEdit {
   segment: number | null
   vertex: number | null
+}
+
+/** What the obstacle and zone tools draw next (UI state). */
+export interface SpaceDraft {
+  category: ObstacleCategory
+  zoneKind: ZoneKind
 }
 
 /** Values the terminal tool uses for the next wall terminal (entered by the user). */
@@ -52,6 +74,9 @@ interface EditorState {
   rerouteAllRequest: number
   pipeEdit: PipeEdit
   terminalDraft: TerminalDraft
+  spaceDraft: SpaceDraft
+  /** Place shown in 2D and 3D (e.g. a rule violation); cleared by the next selection. */
+  highlight: Point3 | null
 
   load: (projectId: string, scene: Scene) => void
   /** Applies an edit as one undo step. Returns false (and sets `message`) if rejected. */
@@ -82,6 +107,9 @@ interface EditorState {
   rerouteAll: () => void
   setPipeEdit: (edit: PipeEdit) => void
   setTerminalDraft: (draft: Partial<TerminalDraft>) => void
+  setSpaceDraft: (draft: Partial<SpaceDraft>) => void
+  /** Selects an element and marks a place (e.g. where a rule is broken). */
+  showPlace: (selection: Selection, point: Point3) => void
 }
 
 let gestureBase: Scene | null = null
@@ -95,6 +123,8 @@ function validSelection(scene: Scene, selection: Selection): Selection {
     equipment: scene.equipment,
     terminal: scene.terminals,
     pipe: scene.pipes,
+    obstacle: scene.obstacles,
+    zone: scene.zones,
   }
   const list: readonly { id: string }[] = lists[selection.kind]
   return list.some((e) => e.id === selection.id) ? selection : null
@@ -134,6 +164,8 @@ export const useEditorStore = create<EditorState>()((set, get) => {
     rerouteAllRequest: 0,
     pipeEdit: { segment: null, vertex: null },
     terminalDraft: { systemId: 'cold', height: null, outerDiameter: null },
+    spaceDraft: { category: 'electrical', zoneKind: 'forbidden' },
+    highlight: null,
 
     load: (projectId, scene) => {
       gestureBase = null
@@ -147,6 +179,7 @@ export const useEditorStore = create<EditorState>()((set, get) => {
         placingType: null,
         hiddenSystems: [],
         routing: { done: 0, total: 0 },
+        highlight: null,
       })
     },
     apply: (op) => run(op, true),
@@ -175,7 +208,14 @@ export const useEditorStore = create<EditorState>()((set, get) => {
     undo: () => travel(undo),
     redo: () => travel(redo),
     select: (selection) =>
-      set({ selection, message: null, pipeEdit: { segment: null, vertex: null } }),
+      set({
+        selection,
+        message: null,
+        pipeEdit: { segment: null, vertex: null },
+        highlight: null,
+      }),
+    showPlace: (selection, highlight) =>
+      set({ selection, message: null, pipeEdit: { segment: null, vertex: null }, highlight }),
     setTool: (tool) => set({ tool, message: null }),
     setMessage: (message) => set({ message }),
     setSaveStatus: (saveStatus) => set({ saveStatus }),
@@ -194,6 +234,7 @@ export const useEditorStore = create<EditorState>()((set, get) => {
     rerouteAll: () => set((s) => ({ rerouteAllRequest: s.rerouteAllRequest + 1 })),
     setPipeEdit: (pipeEdit) => set({ pipeEdit }),
     setTerminalDraft: (draft) => set((s) => ({ terminalDraft: { ...s.terminalDraft, ...draft } })),
+    setSpaceDraft: (draft) => set((s) => ({ spaceDraft: { ...s.spaceDraft, ...draft } })),
   }
 })
 

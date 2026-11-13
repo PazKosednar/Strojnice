@@ -1,4 +1,4 @@
-import type { Opening, Scene, Wall } from './scene'
+import type { Opening, PlanBox, Scene, Wall, ZoneKind } from './scene'
 import { wallAngle, wallDirection, wallLength } from './wallGeometry'
 import { wallExtensions, wallOutline, type WallExtension } from './wallJoins'
 
@@ -141,4 +141,48 @@ export function wallBaseBoxes(boxes: readonly Box3d[], heightMm: number): Box3d[
         size: [b.size[0], height, b.size[2]] as Vec3,
       }
     })
+}
+
+/** Obstacle or zone as a 3D box (metres, three.js axes; rotation about world Y). */
+export interface SpaceBox3d {
+  id: string
+  kind: 'obstacle' | ZoneKind
+  center: Vec3
+  size: Vec3
+  rotationY: number
+  /** Tag and name of an obstacle; name of a zone. */
+  label: string
+  /** Above the top of the box (for the label). */
+  labelPosition: Vec3
+}
+
+function spaceBox(
+  box: PlanBox,
+): Pick<SpaceBox3d, 'center' | 'size' | 'rotationY' | 'labelPosition'> {
+  const top = (box.bottom + box.height) * MM
+  return {
+    center: [box.center.x * MM, (box.bottom + box.height / 2) * MM, -box.center.y * MM],
+    size: [box.width * MM, box.height * MM, box.depth * MM],
+    // Plan rotation is counter-clockwise seen from above, as is a positive turn about +Y.
+    rotationY: (box.rotation * Math.PI) / 180,
+    labelPosition: [box.center.x * MM, top + 0.15, -box.center.y * MM],
+  }
+}
+
+/** Obstacles and zones for the 3D view. */
+export function spaceToBoxes(scene: Scene): SpaceBox3d[] {
+  return [
+    ...scene.obstacles.map((o) => ({
+      id: o.id,
+      kind: 'obstacle' as const,
+      label: o.name ? `${o.tag} ${o.name}` : o.tag,
+      ...spaceBox(o),
+    })),
+    ...scene.zones.map((z) => ({ id: z.id, kind: z.kind, label: z.name, ...spaceBox(z) })),
+  ]
+}
+
+/** A plan point with height (mm) as a 3D position (m). */
+export function pointTo3d(p: { x: number; y: number; z: number }): Vec3 {
+  return [p.x * MM, p.z * MM, -p.y * MM]
 }

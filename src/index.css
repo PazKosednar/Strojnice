@@ -779,3 +779,85 @@ select[aria-invalid='true'] {
   border-color: #2563eb;
   color: #111827;
 }
+
+/* Obstacles and zones (phase 3b) */
+.zone {
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+}
+.zone-forbidden {
+  fill: rgba(220, 38, 38, 0.16);
+  stroke: #b91c1c;
+}
+.zone-avoid {
+  fill: rgba(234, 88, 12, 0.14);
+  stroke: #c2410c;
+}
+.zone-preferred {
+  fill: rgba(22, 163, 74, 0.14);
+  stroke: #15803d;
+}
+.zone.selected {
+  stroke: #2563eb;
+  stroke-width: 3;
+  stroke-dasharray: none;
+}
+.obstacle {
+  fill: #9ca3af;
+  stroke: #374151;
+  stroke-width: 1.5;
+}
+.obstacle.selected {
+  stroke: #2563eb;
+  stroke-width: 3;
+}
+.obstacle-tag,
+.obstacle-name {
+  font-size: 11px;
+  fill: #111827;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 3px;
+  pointer-events: none;
+}
+.obstacle-tag {
+  font-weight: 600;
+}
+.box-draft {
+  fill: rgba(37, 99, 235, 0.08);
+  stroke: #2563eb;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+.plan-highlight circle {
+  fill: none;
+  stroke: #dc2626;
+  stroke-width: 3;
+  pointer-events: none;
+}
+.plan-highlight circle + circle {
+  fill: #dc2626;
+}
+.rule-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+.rule-list > li {
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.rule-list > li.rule-off {
+  opacity: 0.7;
+}
+.rule-status {
+  display: block;
+  font-size: 12px;
+  color: #b45309;
+}
+.rule-status.effective {
+  color: #15803d;
+}

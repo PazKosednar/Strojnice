@@ -3,6 +3,7 @@ import { EquipmentProperties } from './EquipmentProperties'
 import { OpeningProperties } from './OpeningProperties'
 import { PipeProperties } from './PipeProperties'
 import { SettingsProperties } from './SettingsProperties'
+import { ObstacleProperties, ZoneProperties } from './SpaceProperties'
 import { TerminalProperties } from './TerminalProperties'
 import { WallProperties } from './WallProperties'
 
@@ -23,6 +24,10 @@ export function PropertiesPanel() {
     selection?.kind === 'pipe' ? scene.pipes.find((p) => p.id === selection.id) : undefined
   const terminal =
     selection?.kind === 'terminal' ? scene.terminals.find((t) => t.id === selection.id) : undefined
+  const obstacle =
+    selection?.kind === 'obstacle' ? scene.obstacles.find((o) => o.id === selection.id) : undefined
+  const zone =
+    selection?.kind === 'zone' ? scene.zones.find((z) => z.id === selection.id) : undefined
 
   return (
     <div className="properties" aria-label="Lastnosti">
@@ -36,6 +41,10 @@ export function PropertiesPanel() {
         <WallProperties wall={wall} />
       ) : opening ? (
         <OpeningProperties opening={opening} />
+      ) : obstacle ? (
+        <ObstacleProperties obstacle={obstacle} />
+      ) : zone ? (
+        <ZoneProperties zone={zone} />
       ) : (
         <SettingsProperties settings={scene.settings} />
       )}

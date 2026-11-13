@@ -39,4 +39,14 @@ describe('NumberField', () => {
     rerender(<NumberField label="Dolžina" value={1500} onCommit={() => true} />)
     expect(screen.getByLabelText('Dolžina')).toHaveValue('1500')
   })
+
+  it('clears an optional value when the field is emptied', async () => {
+    const onCommit = vi.fn().mockReturnValue(true)
+    const onClear = vi.fn().mockReturnValue(true)
+    render(<NumberField label="Razmik" value={300} onCommit={onCommit} onClear={onClear} />)
+    await userEvent.clear(screen.getByLabelText('Razmik'))
+    await userEvent.type(screen.getByLabelText('Razmik'), '{Enter}')
+    expect(onClear).toHaveBeenCalledTimes(1)
+    expect(onCommit).not.toHaveBeenCalled()
+  })
 })

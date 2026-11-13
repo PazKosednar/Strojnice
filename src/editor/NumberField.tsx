@@ -8,6 +8,8 @@ interface Props {
   onCommit: (value: number) => boolean
   disabled?: boolean
   unit?: string
+  /** When given, an empty field is allowed and means "not entered" (return false to reject). */
+  onClear?: () => boolean
 }
 
 const asText = (value: number | null) => (value === null ? '' : String(value))
@@ -16,7 +18,7 @@ const asText = (value: number | null) => (value === null ? '' : String(value))
  * Integer input that commits on Enter or blur and reverts on Esc or rejection.
  * Shows the latest model value whenever it changes from outside.
  */
-export function NumberField({ label, value, onCommit, disabled, unit = 'mm' }: Props) {
+export function NumberField({ label, value, onCommit, disabled, unit = 'mm', onClear }: Props) {
   const id = useId()
   const [text, setText] = useState(asText(value))
   const [shown, setShown] = useState(value)
@@ -28,6 +30,10 @@ export function NumberField({ label, value, onCommit, disabled, unit = 'mm' }: P
   const commit = () => {
     const trimmed = text.trim()
     if (trimmed === asText(value)) return
+    if (trimmed === '' && onClear) {
+      if (!onClear()) setText(asText(value))
+      return
+    }
     const parsed = /^-?\d+$/.test(trimmed) ? Number(trimmed) : NaN
     if (Number.isNaN(parsed) || !onCommit(parsed)) setText(asText(value))
   }

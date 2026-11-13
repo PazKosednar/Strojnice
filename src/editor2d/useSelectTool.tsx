@@ -1,6 +1,8 @@
 import { useRef, type ReactNode } from 'react'
 import { updateEquipment } from '../core/equipmentOps'
-import { findEquipmentAt, findOpeningAt, findWallAt } from '../core/hitTest'
+import { findBoxAt, findEquipmentAt, findOpeningAt, findWallAt } from '../core/hitTest'
+import { updateObstacle } from '../core/obstacleOps'
+import { updateZone } from '../core/zoneOps'
 import { findEndAt, findPipeAt, findVertexAt } from '../core/pipeHitTest'
 import { editPipeRoute, insertVertex, moveSegment, segmentAxis, type Axis } from '../core/routeEdit'
 import type { Point, RoutePoint } from '../core/scene'
@@ -16,6 +18,8 @@ type Drag =
   | { kind: 'endpoint'; wallId: string; which: 'start' | 'end' }
   /** `grab` is the cursor offset from the equipment centre when the drag started. */
   | { kind: 'equipment'; id: string; grab: Point }
+  /** Moving an obstacle or zone; `grab` as for equipment. */
+  | { kind: 'box'; target: 'obstacle' | 'zone'; id: string; grab: Point }
   /** Moving a pipe segment perpendicular to itself, from its route at drag start. */
   | {
       kind: 'segment'
@@ -30,7 +34,7 @@ type Drag =
 const samePoint = (a: Point, b: Point) => a.x === b.x && a.y === b.y
 
 export const SELECT_HINT =
-  'Klikni element za urejanje. Vleci napravo, krajišče stene ali odsek cevi. Dvoklik na cev doda lom. R zasuka napravo, Ctrl+D jo podvoji.'
+  'Klikni element za urejanje. Vleci napravo, oviro, cono, krajišče stene ali odsek cevi. Dvoklik na cev doda lom. R zasuka napravo, Ctrl+D jo podvoji.'
 
 /** Select tool: picking elements, dragging wall endpoints and equipment. */
 export function useSelectTool(active: boolean) {
@@ -93,6 +97,18 @@ export function useSelectTool(active: boolean) {
         beginGesture()
         return 'drag'
       }
+      const obstacle = findBoxAt(scene.obstacles, info.world)
+      if (obstacle) {
+        select({ kind: 'obstacle', id: obstacle.id })
+        dragRef.current = {
+          kind: 'box',
+          target: 'obstacle',
+          id: obstacle.id,
+          grab: { x: info.world.x - obstacle.center.x, y: info.world.y - obstacle.center.y },
+        }
+        beginGesture()
+        return 'drag'
+      }
       const opening = findOpeningAt(scene, info.world, info.tolerance)
       if (opening) {
         select({ kind: 'opening', id: opening.id })
@@ -102,6 +118,19 @@ export function useSelectTool(active: boolean) {
       if (hit) {
         select({ kind: 'wall', id: hit.wall.id })
         return 'selected'
+      }
+      // Zones lie under everything else, so they are picked last.
+      const zone = findBoxAt(scene.zones, info.world)
+      if (zone) {
+        select({ kind: 'zone', id: zone.id })
+        dragRef.current = {
+          kind: 'box',
+          target: 'zone',
+          id: zone.id,
+          grab: { x: info.world.x - zone.center.x, y: info.world.y - zone.center.y },
+        }
+        beginGesture()
+        return 'drag'
       }
       return 'none'
     },
@@ -142,6 +171,17 @@ export function useSelectTool(active: boolean) {
           editPipeRoute(s, drag.pipeId, () =>
             moveSegment(drag.route, drag.segment, drag.axis, delta),
           ),
+        )
+        return true
+      }
+
+      if (drag.kind === 'box') {
+        const raw = { x: info.world.x - drag.grab.x, y: info.world.y - drag.grab.y }
+        const center = info.altKey ? snapToGrid(raw, 1) : snapToGrid(raw, current.settings.gridSize)
+        preview((s) =>
+          drag.target === 'obstacle'
+            ? updateObstacle(s, drag.id, { center })
+            : updateZone(s, drag.id, { center }),
         )
         return true
       }

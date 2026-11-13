@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from 'react'
 import { removeEquipment } from '../core/equipmentOps'
-import { findEquipmentAt, findOpeningAt, findWallAt } from '../core/hitTest'
+import { findBoxAt, findEquipmentAt, findOpeningAt, findWallAt } from '../core/hitTest'
+import { removeObstacle } from '../core/obstacleOps'
 import { placeOpening, removeOpening } from '../core/openingOps'
 import { findEndAt, findPipeAt } from '../core/pipeHitTest'
 import { removePipe } from '../core/pipeOps'
@@ -8,6 +9,7 @@ import { removeTerminal } from '../core/terminalOps'
 import type { Point } from '../core/scene'
 import { equipmentWithConflicts, sceneWarnings } from '../core/sceneWarnings'
 import { removeWall } from '../core/wallOps'
+import { removeZone } from '../core/zoneOps'
 import { newId } from '../editor/newId'
 import { selectScene, useEditorStore } from '../stores/editorStore'
 import { endStates } from './endStates'
@@ -15,12 +17,14 @@ import { PlanDimensions } from './PlanDimensions'
 import { PlanEquipment } from './PlanEquipment'
 import { PlanGrid } from './PlanGrid'
 import { PlanPipes } from './PlanPipes'
+import { PlanHighlight, PlanObstacles, PlanZones } from './PlanSpace'
 import { PlanTerminals } from './PlanTerminals'
 import { PlanWalls } from './PlanWalls'
 import { ScaleBar } from './ScaleBar'
 import { sceneBounds } from './sceneBounds'
 import { isTyping, type PointerInfo } from './toolTypes'
 import { useElementSize } from './useElementSize'
+import { useBoxTool } from './useBoxTool'
 import { useEquipmentTool } from './useEquipmentTool'
 import { usePipeTool } from './usePipeTool'
 import { SELECT_HINT, useSelectTool } from './useSelectTool'
@@ -36,7 +40,7 @@ const SNAP_PX = 12
 const HINTS = {
   door: 'Klikni na steno, kamor želiš postaviti vrata.',
   window: 'Klikni na steno, kamor želiš postaviti okno.',
-  delete: 'Klikni cev, izhod, napravo, steno ali odprtino, ki jo želiš izbrisati.',
+  delete: 'Klikni cev, izhod, napravo, oviro, cono, steno ali odprtino, ki jo želiš izbrisati.',
 } as const
 
 /**
@@ -50,6 +54,7 @@ export function Plan2D() {
   const showClearances = useEditorStore((s) => s.showClearances)
   const hiddenSystems = useEditorStore((s) => s.hiddenSystems)
   const pipeEdit = useEditorStore((s) => s.pipeEdit)
+  const highlight = useEditorStore((s) => s.highlight)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -65,6 +70,7 @@ export function Plan2D() {
   const equipmentTool = useEquipmentTool(tool === 'equipment')
   const pipeTool = usePipeTool(tool === 'pipe')
   const terminalTool = useTerminalTool()
+  const boxTool = useBoxTool(tool === 'obstacle' || tool === 'zone' ? tool : null)
 
   const hasWalls = scene.walls.length > 0
   const [prevHasWalls, setPrevHasWalls] = useState(hasWalls)
@@ -121,6 +127,10 @@ export function Plan2D() {
     if (tool === 'equipment') return equipmentTool.pointerDown(info)
     if (tool === 'pipe') return pipeTool.pointerDown(info, activeView.scale)
     if (tool === 'terminal') return terminalTool.pointerDown(info)
+    if (tool === 'obstacle' || tool === 'zone') {
+      if (boxTool.pointerDown(info)) e.currentTarget.setPointerCapture(e.pointerId)
+      return
+    }
     if (tool === 'door' || tool === 'window') {
       const hit = findWallAt(scene.walls, info.world, info.tolerance)
       if (!hit) return setMessage('Klikni na steno.')
@@ -137,10 +147,14 @@ export function Plan2D() {
       if (pipeHit) return void apply((s) => removePipe(s, pipeHit.pipe.id))
       const item = findEquipmentAt(scene.equipment, info.world)
       if (item) return void apply((s) => removeEquipment(s, item.id))
+      const obstacle = findBoxAt(scene.obstacles, info.world)
+      if (obstacle) return void apply((s) => removeObstacle(s, obstacle.id))
       const opening = findOpeningAt(scene, info.world, info.tolerance)
       if (opening) return void apply((s) => removeOpening(s, opening.id))
       const hit = findWallAt(scene.walls, info.world, info.tolerance)
-      if (hit) apply((s) => removeWall(s, hit.wall.id))
+      if (hit) return void apply((s) => removeWall(s, hit.wall.id))
+      const zone = findBoxAt(scene.zones, info.world)
+      if (zone) apply((s) => removeZone(s, zone.id))
       return
     }
 
@@ -164,6 +178,7 @@ export function Plan2D() {
     if (selectTool.pointerMove(info)) return
     if (tool === 'wall') wallTool.pointerMove(info)
     if (tool === 'equipment') equipmentTool.pointerMove(info)
+    if (tool === 'obstacle' || tool === 'zone') boxTool.pointerMove(info)
   }
 
   const onDoubleClick = (e: MouseEvent<SVGSVGElement>) => {
@@ -179,6 +194,7 @@ export function Plan2D() {
 
   const onPointerUp = () => {
     selectTool.pointerUp()
+    boxTool.pointerUp()
     panRef.current = null
   }
 
@@ -220,7 +236,9 @@ export function Plan2D() {
             ? pipeTool.hint
             : tool === 'terminal'
               ? terminalTool.hint
-              : HINTS[tool]
+              : tool === 'obstacle' || tool === 'zone'
+                ? boxTool.hint
+                : HINTS[tool]
 
   return (
     <div className="plan2d" ref={containerRef}>
@@ -245,6 +263,7 @@ export function Plan2D() {
             height={size.height}
             gridSize={scene.settings.gridSize}
           />
+          <PlanZones scene={scene} view={activeView} selection={selection} />
           <PlanWalls scene={scene} view={activeView} selection={selection} />
           <PlanDimensions walls={scene.walls} view={activeView} />
           <PlanEquipment
@@ -256,6 +275,7 @@ export function Plan2D() {
             endStates={states}
             hiddenSystems={hiddenSystems}
           />
+          <PlanObstacles scene={scene} view={activeView} selection={selection} />
           <PlanPipes
             scene={scene}
             view={activeView}
@@ -273,6 +293,8 @@ export function Plan2D() {
           {selectTool.renderOverlay(activeView)}
           {wallTool.renderOverlay(activeView)}
           {equipmentTool.renderOverlay(activeView)}
+          {boxTool.renderOverlay(activeView)}
+          <PlanHighlight view={activeView} point={highlight} />
           <ScaleBar view={activeView} height={size.height} />
         </svg>
       )}

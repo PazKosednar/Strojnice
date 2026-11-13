@@ -1,5 +1,6 @@
 import { equipmentFootprint, footprintContains } from './equipmentGeometry'
-import type { Equipment, Opening, Point, Scene, Wall } from './scene'
+import { planBoxCorners } from './planBox'
+import type { Equipment, Opening, PlanBox, Point, Scene, Wall } from './scene'
 import { projectOntoWall } from './wallGeometry'
 
 export interface WallHit {
@@ -48,6 +49,15 @@ export function findEquipmentAt(equipment: readonly Equipment[], point: Point): 
   for (let i = equipment.length - 1; i >= 0; i--) {
     const item = equipment[i]!
     if (footprintContains(equipmentFootprint(item), point)) return item
+  }
+  return null
+}
+
+/** Finds the box (obstacle or zone) whose footprint contains the point (last one wins). */
+export function findBoxAt<T extends PlanBox>(boxes: readonly T[], point: Point): T | null {
+  for (let i = boxes.length - 1; i >= 0; i--) {
+    const box = boxes[i]!
+    if (footprintContains({ kind: 'polygon', points: planBoxCorners(box) }, point)) return box
   }
   return null
 }
