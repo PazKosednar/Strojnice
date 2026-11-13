@@ -3,19 +3,11 @@ import type { EquipmentType } from '../core/scene'
 import { newId } from '../editor/newId'
 import { useCatalogStore } from '../stores/catalogStore'
 import { selectScene, useEditorStore } from '../stores/editorStore'
+import { describeType } from './describeType'
 import { EquipmentTypeForm } from './EquipmentTypeForm'
+import { PublicCatalogList } from './PublicCatalogList'
 import { EQUIPMENT_TEMPLATES } from './templates'
 import { draftFromTemplate, draftFromType, type TypeDraft } from './typeDraft'
-
-function describeType(type: EquipmentType): string {
-  const { shape } = type
-  const size =
-    shape.kind === 'box'
-      ? `${shape.width} × ${shape.depth} × ${shape.height} mm`
-      : `⌀ ${shape.diameter} × ${shape.height} mm`
-  const mounting = type.mounting === 'wall' ? 'stenska' : 'talna'
-  return `${type.tagPrefix} · ${size} · ${mounting} · priključkov: ${type.ports.length}`
-}
 
 type Mode =
   { kind: 'list' } | { kind: 'templates' } | { kind: 'form'; title: string; draft: TypeDraft }
@@ -62,6 +54,9 @@ export function CatalogPanel() {
   return (
     <div className="catalog">
       <h2>Katalog naprav</h2>
+      <PublicCatalogList onCopy={duplicate} />
+
+      <h3>Moj katalog</h3>
       <p className="muted small">
         Tvoji tipi naprav, na voljo v vseh projektih. Sprememba tipa ne spremeni že postavljenih
         naprav.
@@ -106,7 +101,10 @@ export function CatalogPanel() {
       )}
       {status === 'loading' && <p>Nalaganje …</p>}
       {status === 'ready' && types.length === 0 && (
-        <p className="muted">Katalog je prazen. Ustvari prvi tip z gumbom »Nov tip«.</p>
+        <p className="muted">
+          Tvoj katalog je prazen. Ustvari tip z gumbom »Nov tip« ali kopiraj izdelek iz javnega
+          kataloga.
+        </p>
       )}
 
       <ul className="catalog-list">

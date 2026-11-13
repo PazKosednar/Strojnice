@@ -153,6 +153,13 @@ Tip naprave ima lahko 3D model `.glb` (npr. Viessmann Vitocal 250-A), ki se v 3D
 namesto kvadra ali valja. Shranjen je v zasebni shrambi Supabase. Mere modela se ponudijo
 v obrazcu tipa, priključke in odmike vnese uporabnik.
 
+### Javni katalog (izvedeno)
+
+Izdelki proizvajalcev so definirani v kodi (`src/catalog/public/`) in vidni vsem
+uporabnikom, z modeli v `public/library/`. Prvi je Viessmann Vitocal 250-A (notranja in
+zunanja enota). Uporabnik jih postavi neposredno ali kopira v svoj katalog in dopolni.
+Dodajanje izdelkov: [javni-katalog.md](javni-katalog.md).
+
 ### Faza 5 (kasneje)
 
 - Uvoz 3D skena prostora (GLB/USDZ)

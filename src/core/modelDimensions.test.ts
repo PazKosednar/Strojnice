@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseEquipmentType } from './equipmentType'
+import { isPublicModelPath, parseEquipmentType } from './equipmentType'
 import { modelDimensions, modelOffset } from './modelDimensions'
 import { boxType } from './testFixtures'
 
@@ -43,6 +43,31 @@ describe('equipment type with a model', () => {
       ok: true,
       type: withModel,
     })
+  })
+
+  it('accepts a model of the public catalogue and tells it apart', () => {
+    const path = 'library/viessmann/Vitocal-250-A_IDU-A.glb'
+    expect(parseEquipmentType({ ...withModel, model: { ...withModel.model, path } })).toMatchObject(
+      { ok: true },
+    )
+    expect(isPublicModelPath(path)).toBe(true)
+    expect(isPublicModelPath(withModel.model.path)).toBe(false)
+  })
+
+  it('rejects public paths with folders, traversal or other characters', () => {
+    for (const path of [
+      'library/../secret.glb',
+      'library/viessmann/sub/x.glb',
+      'library/Viessmann/x.glb',
+      'library/viessmann/x y.glb',
+      '/library/viessmann/x.glb',
+      'library/viessmann/x.gltf',
+    ]) {
+      expect(isPublicModelPath(path)).toBe(false)
+      expect(
+        parseEquipmentType({ ...withModel, model: { ...withModel.model, path } }),
+      ).toMatchObject({ ok: false })
+    }
   })
 
   it('rejects unsafe paths, odd rotations and empty bounds', () => {

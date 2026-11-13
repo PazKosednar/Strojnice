@@ -113,6 +113,16 @@ TypeScript je zaklenjen na `~6.0`, ker typescript-eslint še ne podpira TS 7.
 - Datoteka ostane v shrambi tudi, ko se tip izbriše iz kataloga (postavljene naprave v
   projektih jo še uporabljajo).
 
+## Dogovori modela (javni katalog)
+
+- **Javni katalog** je v kodi (`src/catalog/public/`, ena datoteka na proizvajalca), viden
+  vsem uporabnikom, samo za branje. Osebni katalog (`equipment_types`) ostane; izdelek se
+  lahko kopira vanj. Navodila: [docs/javni-katalog.md](docs/javni-katalog.md).
+- Id izdelka je stalen in enoličen (npr. `viessmann-vitocal-250-a-idu-a`).
+- Modeli javnih izdelkov so v `public/library/<mapa>/<ime>.glb`; pot v tipu je
+  `library/<mapa>/<ime>.glb` (`isPublicModelPath`) in se naloži iz aplikacije, ne iz shrambe.
+  Mere izmeri `scripts/measure-model.mjs`; priključki in odmiki so iz navodil proizvajalca.
+
 ## Ukazi
 
 | Namen               | Ukaz                   |

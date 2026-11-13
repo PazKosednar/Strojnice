@@ -91,8 +91,15 @@ export function readEquipmentType(value: unknown, path: string): EquipmentType {
   return type
 }
 
-/** `<uuid>/<uuid>/<name>.glb` with a plain file name (no further folders). */
-const MODEL_PATH = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[^/\\]+\.glb$/i
+/** Uploaded model in private storage: `<uuid>/<uuid>/<name>.glb` (no further folders). */
+const STORAGE_MODEL_PATH = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[^/\\]+\.glb$/i
+/** Model of the public catalogue, shipped with the app: `library/<folder>/<name>.glb`. */
+const PUBLIC_MODEL_PATH = /^library\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.glb$/
+
+/** True for a model shipped with the app (public catalogue), false for an uploaded one. */
+export function isPublicModelPath(path: string): boolean {
+  return PUBLIC_MODEL_PATH.test(path)
+}
 
 function point3(value: unknown, path: string) {
   const o = obj(value, path)
@@ -102,8 +109,10 @@ function point3(value: unknown, path: string) {
 function model(value: unknown, path: string): EquipmentModel {
   const o = obj(value, path)
   const modelPath = str(o.path, `${path}.path`)
-  if (!MODEL_PATH.test(modelPath)) {
-    throw new SceneFormatError(`${path}.path: expected "<user id>/<type id>/<name>.glb"`)
+  if (!STORAGE_MODEL_PATH.test(modelPath) && !isPublicModelPath(modelPath)) {
+    throw new SceneFormatError(
+      `${path}.path: expected "<user id>/<type id>/<name>.glb" or "library/<folder>/<name>.glb"`,
+    )
   }
   const rotation = o.rotation
   if (rotation !== 0 && rotation !== 90 && rotation !== 180 && rotation !== 270) {

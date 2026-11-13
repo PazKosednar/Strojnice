@@ -1,3 +1,4 @@
+import { isPublicModelPath } from '../core/equipmentType'
 import { getSupabase } from './supabase'
 
 export const MODELS_BUCKET = 'equipment-models'
@@ -41,6 +42,11 @@ export async function uploadModel(userId: string, typeId: string, file: File): P
   return path
 }
 
+/** URL of a public catalogue model (served from `public/`, respects the app's base path). */
+export function publicModelUrl(path: string, base: string = import.meta.env.BASE_URL): string {
+  return `${base.endsWith('/') ? base : `${base}/`}${path}`
+}
+
 const urls = new Map<string, Promise<string>>()
 
 /**
@@ -48,7 +54,13 @@ const urls = new Map<string, Promise<string>>()
  * so the file is fetched with the user's session and served to three.js from memory.
  */
 export function modelObjectUrl(path: string): Promise<string> {
+  // The same promise for the same path: React's use() suspends again on a new one.
   let url = urls.get(path)
+  if (!url && isPublicModelPath(path)) {
+    // Models of the public catalogue are static files of the app.
+    url = Promise.resolve(publicModelUrl(path))
+    urls.set(path, url)
+  }
   if (!url) {
     url = getSupabase()
       .storage.from(MODELS_BUCKET)

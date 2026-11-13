@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { asGlbBlob, GLB_MIME, modelPath, safeFileName } from './modelsApi'
+import {
+  asGlbBlob,
+  GLB_MIME,
+  modelObjectUrl,
+  modelPath,
+  publicModelUrl,
+  safeFileName,
+} from './modelsApi'
 
 describe('safeFileName', () => {
   it('keeps simple names', () => {
@@ -20,6 +27,20 @@ describe('safeFileName', () => {
 describe('modelPath', () => {
   it('puts the file in the user and type folder', () => {
     expect(modelPath('u-1', 't-1', 'My model.glb')).toBe('u-1/t-1/My_model.glb')
+  })
+})
+
+describe('public catalogue models', () => {
+  it('are served from the app under its base path, without storage', async () => {
+    expect(publicModelUrl('library/viessmann/a.glb', '/')).toBe('/library/viessmann/a.glb')
+    expect(publicModelUrl('library/viessmann/a.glb', '/app')).toBe('/app/library/viessmann/a.glb')
+    await expect(modelObjectUrl('library/viessmann/a.glb')).resolves.toBe(
+      publicModelUrl('library/viessmann/a.glb'),
+    )
+    // React's use() needs the very same promise on every render.
+    expect(modelObjectUrl('library/viessmann/a.glb')).toBe(
+      modelObjectUrl('library/viessmann/a.glb'),
+    )
   })
 })
 
