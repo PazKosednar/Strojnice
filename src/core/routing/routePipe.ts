@@ -323,16 +323,24 @@ export function routePipe(scene: Scene, pipe: Pipe, options: RouteOptions = {}):
   if (!free(a.end)) return { ok: false, reason: 'startBlocked' }
   if (!free(b.end)) return { ok: false, reason: 'goalBlocked' }
 
+  // Planes exactly at the spacing from the circuit partner, so the pipe can run beside it
+  // at a constant distance whatever the grid step is.
+  const companions = options.companions ?? []
+  const besides = (axis: 'x' | 'y' | 'z') =>
+    companions.flatMap((c) => c.route.flatMap((p) => [p[axis] - c.distance, p[axis] + c.distance]))
   const grid = buildGrid(
     sceneBounds(scene, [a, b], limits.margin),
     scene.settings.routingGrid,
-    { xs: [a.end.x, b.end.x], ys: [a.end.y, b.end.y], zs: [a.end.z, b.end.z] },
+    {
+      xs: [a.end.x, b.end.x, ...besides('x')],
+      ys: [a.end.y, b.end.y, ...besides('y')],
+      zs: [a.end.z, b.end.z, ...besides('z').filter((z) => z >= field.zMin && z <= field.zMax)],
+    },
     limits.maxNodes,
     limits.maxGridStep,
   )
   if (!grid) return { ok: false, reason: 'tooLarge' }
 
-  const companions = options.companions ?? []
   const result = search({
     grid,
     field,
