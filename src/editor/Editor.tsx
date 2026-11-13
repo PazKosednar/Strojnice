@@ -2,6 +2,7 @@ import { lazy, Suspense, useState } from 'react'
 import { Plan2D } from '../editor2d/Plan2D'
 import { useAutoRouting } from '../routing/useAutoRouting'
 import { useEditorStore } from '../stores/editorStore'
+import { AutoConnectPanel } from './AutoConnectPanel'
 import { SidePanel } from './SidePanel'
 import { Toolbar, type ViewMode } from './Toolbar'
 import { useEditorShortcuts } from './useEditorShortcuts'
@@ -50,6 +51,7 @@ export function Editor({ projectId, projectName }: Props) {
             </section>
           )}
         </div>
+        <AutoConnectPanel />
         <SidePanel />
       </div>
     </div>

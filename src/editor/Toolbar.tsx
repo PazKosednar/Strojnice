@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { useEditorStore, type Tool, type WallViewMode } from '../stores/editorStore'
+import { useAutoConnectStore } from '../stores/autoConnectStore'
+import { selectScene, useEditorStore, type Tool, type WallViewMode } from '../stores/editorStore'
 import { RectRoomForm } from './RectRoomForm'
 import { TerminalDraftForm } from './TerminalDraftForm'
 import { SaveStatusIndicator } from './SaveStatusIndicator'
@@ -120,6 +121,15 @@ export function Toolbar({ projectName, viewMode, onViewMode }: Props) {
           />
           Odmiki
         </label>
+        <button
+          type="button"
+          onClick={() =>
+            useAutoConnectStore.getState().open(selectScene(useEditorStore.getState()))
+          }
+          title="Predlaga, kateri prosti priključki se povežejo, in vse cevi spelje skupaj"
+        >
+          Samodejno poveži in spelji
+        </button>
         <button
           type="button"
           onClick={rerouteAll}

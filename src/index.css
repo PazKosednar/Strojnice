@@ -861,3 +861,54 @@ select[aria-invalid='true'] {
 .rule-status.effective {
   color: #15803d;
 }
+
+/* Automatic connection (phase 3b, part B) */
+.auto-connect {
+  width: 380px;
+  flex-shrink: 0;
+  overflow: auto;
+  padding: 0.75rem;
+  border-left: 1px solid #ddd;
+  background: #fff;
+}
+.auto-connect-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.auto-connect table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.auto-connect th,
+.auto-connect td {
+  text-align: left;
+  padding: 3px 4px;
+  border-bottom: 1px solid #eee;
+  vertical-align: top;
+}
+.auto-connect select {
+  max-width: 160px;
+}
+.preview-list {
+  list-style: none;
+  padding: 0;
+}
+.preview-list li {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+  border-bottom: 1px solid #eee;
+}
+.proposed-pipes {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.notice {
+  background: #fffbeb;
+  border: 1px solid #f59e0b;
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+}

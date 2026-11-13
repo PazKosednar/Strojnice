@@ -6,8 +6,9 @@ import {
   removeEquipment,
   rotateEquipment,
   updateEquipment,
+  replaceEquipmentType,
 } from './equipmentOps'
-import type { Scene } from './scene'
+import { createEmptyScene, type Scene } from './scene'
 import type { SceneResult } from './sceneResult'
 import { boxType, cylinderType, roomScene } from './testFixtures'
 
@@ -143,5 +144,43 @@ describe('removeEquipment / duplicateEquipment', () => {
   it('reports unknown ids', () => {
     expect(removeEquipment(roomScene(), 'x')).toEqual({ ok: false, error: 'notFound' })
     expect(duplicateEquipment(roomScene(), 'x', 'y')).toEqual({ ok: false, error: 'notFound' })
+  })
+})
+
+describe('replaceEquipmentType', () => {
+  it('updates the type copy and drops pipes only at ports that no longer exist', () => {
+    let scene = { ...createEmptyScene() }
+    const result = addEquipment(scene, { id: 'e1', type: boxType, position: { x: 0, y: 0 } })
+    if (!result.ok) throw new Error(result.error)
+    scene = {
+      ...result.scene,
+      pipes: [
+        {
+          id: 'p1',
+          systemId: 'supply',
+          from: { kind: 'port', equipmentId: 'e1', portId: 'p1' },
+          to: { kind: 'terminal', terminalId: 't' },
+          outerDiameter: 22,
+          route: [],
+          mode: 'auto',
+        },
+        {
+          id: 'p2',
+          systemId: 'return',
+          from: { kind: 'port', equipmentId: 'e1', portId: 'p2' },
+          to: { kind: 'terminal', terminalId: 't2' },
+          outerDiameter: 22,
+          route: [],
+          mode: 'auto',
+        },
+      ],
+    }
+    const newer = { ...boxType, ports: [{ ...boxType.ports[0]!, outerDiameter: 28 }] }
+    const replaced = replaceEquipmentType(scene, 'e1', newer)
+    if (!replaced.ok) throw new Error(replaced.error)
+    expect(replaced.scene.equipment[0]!.type).toEqual(newer)
+    expect(replaced.scene.equipment[0]!.type).not.toBe(newer)
+    expect(replaced.scene.pipes.map((p) => p.id)).toEqual(['p1'])
+    expect(replaced.scene.equipment[0]!.tag).toBe(scene.equipment[0]!.tag)
   })
 })

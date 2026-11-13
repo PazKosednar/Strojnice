@@ -1,5 +1,7 @@
+import { PUBLIC_PRODUCTS } from '../catalog/public'
 import {
   removeEquipment,
+  replaceEquipmentType,
   rotateEquipment,
   updateEquipment,
   type EquipmentPatch,
@@ -23,10 +25,27 @@ export function EquipmentProperties({ equipment, systems }: Props) {
   const { type } = equipment
   const { shape } = type
   const c = type.clearances
+  // A placed item keeps its own copy of the type; offer the newer public version.
+  const product = PUBLIC_PRODUCTS.find((p) => p.type.id === type.id)
+  const outdated = product && JSON.stringify(product.type) !== JSON.stringify(type)
 
   return (
     <>
       <h2>Naprava</h2>
+      {product && outdated && (
+        <div className="notice small" role="note">
+          <p>
+            V javnem katalogu je novejša različica tega tipa (npr. priključki). Postavljena naprava
+            ima svojo kopijo in se sama ne spremeni.
+          </p>
+          <button
+            type="button"
+            onClick={() => apply((s) => replaceEquipmentType(s, equipment.id, product.type))}
+          >
+            Posodobi iz javnega kataloga
+          </button>
+        </div>
+      )}
       <TextField label="Oznaka" value={equipment.tag} onCommit={(tag) => update({ tag })} />
       <NumberField
         label="X"

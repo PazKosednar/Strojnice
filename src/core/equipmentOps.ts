@@ -114,3 +114,24 @@ export function duplicateEquipment(
     elevation: source.elevation,
   })
 }
+
+/**
+ * Replaces the type copy of placed equipment with a newer version of its type (e.g. after
+ * the public catalogue gained ports). Only on the user's request: catalogue edits never
+ * change a project by themselves. Pipes at ports that no longer exist are removed; the
+ * other pipes stay and are routed again if their connection moved.
+ */
+export function replaceEquipmentType(scene: Scene, id: string, type: EquipmentType): SceneResult {
+  const current = scene.equipment.find((e) => e.id === id)
+  if (!current) return fail('notFound')
+  const portIds = new Set(type.ports.map((p) => p.id))
+  const gone = (end: { kind: string; equipmentId?: string; portId?: string }) =>
+    end.kind === 'port' && end.equipmentId === id && !portIds.has(end.portId!)
+  return ok({
+    ...scene,
+    pipes: scene.pipes.filter((p) => !gone(p.from) && !gone(p.to)),
+    equipment: scene.equipment.map((e) =>
+      e.id === id ? { ...e, type: cloneEquipmentType(type) } : e,
+    ),
+  })
+}

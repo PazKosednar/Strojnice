@@ -11,6 +11,7 @@ import { equipmentWithConflicts, sceneWarnings } from '../core/sceneWarnings'
 import { removeWall } from '../core/wallOps'
 import { removeZone } from '../core/zoneOps'
 import { newId } from '../editor/newId'
+import { useAutoConnectStore } from '../stores/autoConnectStore'
 import { selectScene, useEditorStore } from '../stores/editorStore'
 import { endStates } from './endStates'
 import { PlanDimensions } from './PlanDimensions'
@@ -55,6 +56,15 @@ export function Plan2D() {
   const hiddenSystems = useEditorStore((s) => s.hiddenSystems)
   const pipeEdit = useEditorStore((s) => s.pipeEdit)
   const highlight = useEditorStore((s) => s.highlight)
+  const preview = useAutoConnectStore((s) => (s.stage === 'preview' ? s.preview : null))
+  const previewIds = useAutoConnectStore((s) => s.previewIds)
+  const proposed = useMemo(
+    () =>
+      preview
+        ? { ...preview, pipes: preview.pipes.filter((p) => previewIds.includes(p.id)) }
+        : null,
+    [preview, previewIds],
+  )
 
   const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -283,6 +293,17 @@ export function Plan2D() {
             selectedPipeId={selection?.kind === 'pipe' ? selection.id : null}
             selectedVertex={pipeEdit.vertex}
           />
+          {proposed && (
+            <g className="proposed-pipes" data-testid="proposed-pipes">
+              <PlanPipes
+                scene={proposed}
+                view={activeView}
+                hiddenSystems={hiddenSystems}
+                selectedPipeId={null}
+                selectedVertex={null}
+              />
+            </g>
+          )}
           <PlanTerminals
             scene={scene}
             view={activeView}

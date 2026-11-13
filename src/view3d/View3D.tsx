@@ -6,6 +6,7 @@ import { pipesTo3d } from '../core/pipesTo3d'
 import { pointTo3d, sceneToBoxes, spaceToBoxes, wallBaseBoxes } from '../core/sceneToBoxes'
 import { WALL_BASE_HEIGHT, wallFacings } from '../core/wallVisibility'
 import { equipmentWithConflicts, sceneWarnings } from '../core/sceneWarnings'
+import { useAutoConnectStore } from '../stores/autoConnectStore'
 import { selectScene, useEditorStore } from '../stores/editorStore'
 import { CameraRig } from './CameraRig'
 import { Equipment3D } from './Equipment3D'
@@ -32,6 +33,18 @@ export default function View3D() {
   const conflicts = useMemo(() => equipmentWithConflicts(sceneWarnings(scene)), [scene])
   const pipes = useMemo(() => pipesTo3d(scene), [scene])
   const space = useMemo(() => spaceToBoxes(scene), [scene])
+  const preview = useAutoConnectStore((s) => (s.stage === 'preview' ? s.preview : null))
+  const previewIds = useAutoConnectStore((s) => s.previewIds)
+  const proposedPipes = useMemo(() => {
+    if (!preview) return null
+    const all = pipesTo3d({ ...preview, terminals: [] })
+    const ids = new Set(previewIds)
+    return {
+      segments: all.segments.filter((s) => ids.has(s.pipeId)),
+      joints: all.joints.filter((j) => ids.has(j.pipeId)),
+      terminals: [],
+    }
+  }, [preview, previewIds])
   const highlight = useEditorStore((s) => s.highlight)
   const wallBoxes = useMemo(() => boxes.filter((b) => b.kind === 'wall'), [boxes])
   const baseBoxes = useMemo(() => wallBaseBoxes(boxes, WALL_BASE_HEIGHT), [boxes])
@@ -81,6 +94,14 @@ export default function View3D() {
             hiddenSystems={hiddenSystems}
           />
         ))}
+        {proposedPipes && (
+          <Pipes3D
+            pipes={proposedPipes}
+            hiddenSystems={hiddenSystems}
+            selectedPipeId={null}
+            ghost
+          />
+        )}
         <Space3D
           boxes={space}
           selectedId={

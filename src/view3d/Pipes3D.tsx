@@ -5,7 +5,15 @@ import type { PipeSegment3d, Pipes3d } from '../core/pipesTo3d'
 const UP = new Vector3(0, 1, 0)
 
 /** Cylinder between two points with the pipe's true outer diameter. */
-function Segment({ segment, highlight }: { segment: PipeSegment3d; highlight: boolean }) {
+function Segment({
+  segment,
+  highlight,
+  ghost = false,
+}: {
+  segment: PipeSegment3d
+  highlight: boolean
+  ghost?: boolean
+}) {
   const [sx, sy, sz] = segment.start
   const [ex, ey, ez] = segment.end
   const { position, quaternion, length } = useMemo(() => {
@@ -27,6 +35,8 @@ function Segment({ segment, highlight }: { segment: PipeSegment3d; highlight: bo
         metalness={0.15}
         emissive={highlight ? '#2563eb' : '#000000'}
         emissiveIntensity={highlight ? 0.45 : 0}
+        transparent={ghost}
+        opacity={ghost ? 0.45 : 1}
       />
     </mesh>
   )
@@ -36,17 +46,19 @@ interface Props {
   pipes: Pipes3d
   hiddenSystems: readonly string[]
   selectedPipeId: string | null
+  /** Proposed pipes (not yet accepted) are drawn transparent. */
+  ghost?: boolean
 }
 
 /** Pipes (cylinders and bend spheres) and wall-terminal stubs in their system colours. */
-export function Pipes3D({ pipes, hiddenSystems, selectedPipeId }: Props) {
+export function Pipes3D({ pipes, hiddenSystems, selectedPipeId, ghost = false }: Props) {
   const visible = (systemId: string) => !hiddenSystems.includes(systemId)
   return (
     <group>
       {pipes.segments
         .filter((s) => visible(s.systemId))
         .map((s) => (
-          <Segment key={s.key} segment={s} highlight={s.pipeId === selectedPipeId} />
+          <Segment key={s.key} segment={s} highlight={s.pipeId === selectedPipeId} ghost={ghost} />
         ))}
       {pipes.joints
         .filter((j) => visible(j.systemId))
@@ -59,6 +71,8 @@ export function Pipes3D({ pipes, hiddenSystems, selectedPipeId }: Props) {
               metalness={0.15}
               emissive={j.pipeId === selectedPipeId ? '#2563eb' : '#000000'}
               emissiveIntensity={j.pipeId === selectedPipeId ? 0.45 : 0}
+              transparent={ghost}
+              opacity={ghost ? 0.45 : 1}
             />
           </mesh>
         ))}
