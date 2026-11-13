@@ -138,7 +138,7 @@ describe('migrateScene v2 -> v3', () => {
       terminals: unknown
       settings: Record<string, unknown>
     }
-    expect(migrated.version).toBe(3)
+    expect(migrated.version).toBe(SCENE_VERSION)
     expect(migrated.settings).toMatchObject(routingDefaults)
     expect(migrated.terminals).toEqual([])
     expect(migrated.equipment).toEqual(v2Scene.equipment)
@@ -164,5 +164,14 @@ describe('parseScene on stored older scenes', () => {
     expect(result.scene.equipment[0]!.type.ports[0]!.outerDiameter).toBeUndefined()
     expect(result.scene.walls).toEqual(v2Scene.walls)
     expect(result.scene.openings).toEqual(v2Scene.openings)
+  })
+})
+
+describe('migrateScene v3 -> v4', () => {
+  it('only bumps the version (3D models are an optional new field)', () => {
+    const v3 = { ...(migrateScene(clone(v2Scene)) as object), version: 3 }
+    const v4 = migrateScene(clone(v3)) as Record<string, unknown>
+    expect(v4.version).toBe(4)
+    expect({ ...v4, version: 3 }).toEqual(v3)
   })
 })

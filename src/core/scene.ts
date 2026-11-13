@@ -10,7 +10,7 @@
  */
 
 /** Current scene schema version. Bump when the stored shape changes. */
-export const SCENE_VERSION = 3
+export const SCENE_VERSION = 4
 
 /** Length unit used throughout the scene. */
 export type SceneUnits = 'mm'
@@ -110,6 +110,24 @@ export interface Clearances {
   top: number
 }
 
+/** Turn of a 3D model about the vertical axis so that its front faces the equipment front. */
+export type ModelRotation = 0 | 90 | 180 | 270
+
+/**
+ * Manufacturer 3D model (glTF binary) attached to an equipment type. The file lies in the
+ * user's private storage; `bounds` are the model's extents (mm, model axes: x right, y up,
+ * z towards the viewer) measured when it was uploaded. The model is drawn instead of the
+ * box or cylinder, its bottom centre at the equipment origin, turned by `rotation` degrees.
+ * It is only a picture: dimensions, ports and clearances still come from the type.
+ */
+export interface EquipmentModel {
+  /** Storage path: `<user id>/<type id>/<file name>.glb`. */
+  path: string
+  fileName: string
+  rotation: ModelRotation
+  bounds: { min: Point3; max: Point3 }
+}
+
 /** Equipment definition from the user's catalogue. All dimensions are entered by the user. */
 export interface EquipmentType {
   id: string
@@ -120,6 +138,7 @@ export interface EquipmentType {
   mounting: Mounting
   ports: Port[]
   clearances?: Clearances
+  model?: EquipmentModel
 }
 
 /**

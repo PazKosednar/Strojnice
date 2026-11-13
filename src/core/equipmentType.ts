@@ -1,5 +1,12 @@
 import { arr, coord, int, obj, oneOf, SceneFormatError, str, text, uniqueIds } from './parseHelpers'
-import type { Clearances, EquipmentShape, EquipmentType, Port, PortDirection } from './scene'
+import type {
+  Clearances,
+  EquipmentModel,
+  EquipmentShape,
+  EquipmentType,
+  Port,
+  PortDirection,
+} from './scene'
 
 export const PORT_DIRECTIONS: readonly PortDirection[] = ['+x', '-x', '+y', '-y', '+z', '-z']
 
@@ -78,7 +85,42 @@ export function readEquipmentType(value: unknown, path: string): EquipmentType {
   if (o.clearances !== undefined && o.clearances !== null) {
     type.clearances = clearances(o.clearances, `${path}.clearances`)
   }
+  if (o.model !== undefined && o.model !== null) {
+    type.model = model(o.model, `${path}.model`)
+  }
   return type
+}
+
+/** `<uuid>/<uuid>/<name>.glb` with a plain file name (no further folders). */
+const MODEL_PATH = /^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[^/\\]+\.glb$/i
+
+function point3(value: unknown, path: string) {
+  const o = obj(value, path)
+  return { x: coord(o.x, `${path}.x`), y: coord(o.y, `${path}.y`), z: coord(o.z, `${path}.z`) }
+}
+
+function model(value: unknown, path: string): EquipmentModel {
+  const o = obj(value, path)
+  const modelPath = str(o.path, `${path}.path`)
+  if (!MODEL_PATH.test(modelPath)) {
+    throw new SceneFormatError(`${path}.path: expected "<user id>/<type id>/<name>.glb"`)
+  }
+  const rotation = o.rotation
+  if (rotation !== 0 && rotation !== 90 && rotation !== 180 && rotation !== 270) {
+    throw new SceneFormatError(`${path}.rotation: expected 0, 90, 180 or 270`)
+  }
+  const bounds = obj(o.bounds, `${path}.bounds`)
+  const min = point3(bounds.min, `${path}.bounds.min`)
+  const max = point3(bounds.max, `${path}.bounds.max`)
+  if (max.x <= min.x || max.y <= min.y || max.z <= min.z) {
+    throw new SceneFormatError(`${path}.bounds: max must be greater than min`)
+  }
+  return {
+    path: modelPath,
+    fileName: str(o.fileName, `${path}.fileName`),
+    rotation,
+    bounds: { min, max },
+  }
 }
 
 export type ParseEquipmentTypeResult =

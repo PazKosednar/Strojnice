@@ -66,7 +66,15 @@ function v2ToV3(scene: Obj): Obj {
   }
 }
 
-const MIGRATIONS: Record<number, (scene: Obj) => Obj> = { 1: v1ToV2, 2: v2ToV3 }
+/**
+ * v3 -> v4: equipment types may carry an optional 3D model. Nothing to convert; only the
+ * version changes, so every change of the stored shape stays visible in the version.
+ */
+function v3ToV4(scene: Obj): Obj {
+  return { ...scene, version: 4 }
+}
+
+const MIGRATIONS: Record<number, (scene: Obj) => Obj> = { 1: v1ToV2, 2: v2ToV3, 3: v3ToV4 }
 
 /**
  * Upgrades stored scene JSON of an older version to the current version, step by step.
