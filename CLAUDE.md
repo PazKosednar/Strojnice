@@ -73,7 +73,7 @@ TypeScript je zaklenjen na `~6.0`, ker typescript-eslint še ne podpira TS 7.
   Cona odmika je kvader ob vsaki strani naprave v njeni višini, `top` nad njo.
 - **Predloge tipov** (`catalog/templates.ts`) določajo samo obliko, predpono in montažo.
   Mer, priključkov in odmikov ne vsebujejo; vnese jih uporabnik.
-- **Verzija scene:** `SCENE_VERSION = 4`. Starejše scene nadgradi `core/sceneMigrations.ts`
+- **Verzija scene:** `SCENE_VERSION = 5`. Starejše scene nadgradi `core/sceneMigrations.ts`
   (klicano iz `parseScene`). Vsaka sprememba shranjene oblike dobi novo verzijo, korak
   migracije in test.
 - **Katalog** je tabela `equipment_types` (na uporabnika, RLS). `definition` se ob branju
@@ -112,6 +112,30 @@ TypeScript je zaklenjen na `~6.0`, ker typescript-eslint še ne podpira TS 7.
   `model.rotation` (0/90/180/270) obrne model, da je njegova sprednja stran spredaj.
 - Datoteka ostane v shrambi tudi, ko se tip izbriše iz kataloga (postavljene naprave v
   projektih jo še uporabljajo).
+
+## Dogovori modela (faza 3b: prostor, ovire, pravila)
+
+- **Ovira** (`Obstacle`): kvader (`PlanBox`: središče, širina, globina, rotacija, spodnja
+  višina, višina) s kategorijo `electrical | duct | structure | other`. Oznaka `OV-NN` je
+  točen identifikator, enolična skupaj z oznakami naprav in izhodov.
+- **Cona** (`Zone`): kvader vrste `forbidden` (ovira), `avoid` (dražja), `preferred`
+  (cenejša; hevristika A* se pomnoži s faktorjem, da ostane spodnja meja).
+- **Izolacija** je pri sistemu (`insulationThickness`, privzeto 0). Razmiki in trki vedno
+  uporabljajo `effectiveDiameter` = zunanji premer + 2 × izolacija (`core/pipeSize.ts`).
+- **Pravila projekta** (`scene.rules`) vnese uporabnik z virom. Aplikacija nima vgrajenih
+  predpisov; začetni nabor je prazen. Pravilo deluje samo, ko je vklopljeno, ima vir in vse
+  vrednosti (`ruleStatus`); neznan sistem pravilo izklopi, ne pokvari projekta.
+  `hard` = prepoved (speljevanje je ne krši), sicer kazen (cena). `maxBends` je vedno samo
+  opozorilo.
+- **Preverjanje** `core/rules/checkRules.ts` teče za vse cevi (tudi ročne); kršitve so
+  opozorila `ruleViolation` z mestom, izmerjeno in zahtevano vrednostjo ter virom.
+  `heightRange` se meri na os vodoravnih odsekov.
+- **Fiksni ravni odseki pri priključkih** (`portStraight`) niso podvrženi pravilom razmika
+  in višine. Pri speljevanju se razmik do tujih nastavkov zmanjša le toliko, da ostane
+  lastni nastavek prost (priključki proizvajalca so lahko bližje od razmika med cevmi).
+- Sprememba ovir, con, pravil ali nastavitev znova spelje vse samodejne cevi.
+- Uteži so v `ROUTING_COSTS` (`avoidZoneFactor`, `preferredZoneFactor`, `softRuleFactor`,
+  `softCrossingPenalty`); so nastavitve aplikacije, ne predpisi.
 
 ## Dogovori modela (javni katalog)
 

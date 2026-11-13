@@ -140,6 +140,26 @@ Prvotni obseg:
 - Brez trkov z napravami, stenami in drugimi cevmi (z odmikom)
 - Ročni popravki trase (premik odseka, dodajanje/brisanje točk), ki ostanejo veljavni
 
+### Faza 3b: samodejno povezovanje in skupno speljevanje
+
+**DEL A (izveden): prostor, ovire, pravila, preverjanje.** Scena verzije 5 z migracijo:
+ovire (`OV-NN`) in cone (prepovedana / izogibanja / prednostna) se rišejo kot pravokotnik
+v 2D, urejajo v plošči lastnosti in prikažejo v 2D in 3D. Sistem ima debelino izolacije.
+Plošča »Pravila« z obveznim virom: najmanjši razmik med sistemoma, vrstni red po višini,
+razmik od ovir, območje višine, prepoved prečkanja, največ kolen. Preverjanje teče za vse
+cevi; kršitve so med opozorili (z izmerjeno in zahtevano vrednostjo ter virom), klik
+označi mesto v 2D in 3D. Speljevanje upošteva ovire, cone, izolacijo, trda pravila kot
+prepoved in mehka kot ceno.
+
+Omejitve: odprtine (vrata, okna) so pri speljevanju vedno zaprte, zato je prepoved
+prečkanja vrat in oken za samodejne cevi izpolnjena že sama po sebi (preverja se pri
+ročnih). `verticalOrder` pri speljevanju upošteva le že speljane cevi drugega sistema.
+Priključki zunanje enote Vitocal 250-A so pod enoto, obrnjeni navzdol; ker enota stoji
+na tleh, trasa iz njih ne obstaja (odprto vprašanje: podstavek ali prehod v tla).
+
+**DEL B (naslednji):** ključi povezav na priključkih, predlog parov, skupno speljevanje
+(vrstni red, vzporedni pari, rip-up and reroute) v Web Workerju, predogled in potrditev.
+
 ### Faza 4: dokumentacija in izvoz
 
 - Kote v tlorisu
