@@ -1,25 +1,31 @@
 import { endGeometry, resolveEnd } from './pipeEnds'
 import type { Pipe, PipeEnd, Point, Point3, Scene } from './scene'
 
-/** Nearest port or wall terminal within `tolerance` mm of a plan point, or null. */
-export function findEndAt(scene: Scene, point: Point, tolerance: number): PipeEnd | null {
-  let best: PipeEnd | null = null
-  let bestDistance = tolerance
+/**
+ * All ports and wall terminals within `tolerance` mm of a plan point, nearest first.
+ * Several ends can share one plan position (ports above each other), so callers pick
+ * among them by what makes sense (e.g. a valid pipe target).
+ */
+export function findEndsAt(scene: Scene, point: Point, tolerance: number): PipeEnd[] {
+  const found: { end: PipeEnd; distance: number }[] = []
   const consider = (end: PipeEnd) => {
     const resolved = resolveEnd(scene, end)
     const geometry = resolved && endGeometry(scene, resolved)
     if (!geometry) return
-    const d = Math.hypot(geometry.point.x - point.x, geometry.point.y - point.y)
-    if (d <= bestDistance) {
-      best = end
-      bestDistance = d
-    }
+    const distance = Math.hypot(geometry.point.x - point.x, geometry.point.y - point.y)
+    if (distance <= tolerance) found.push({ end, distance })
   }
   for (const e of scene.equipment) {
     for (const port of e.type.ports) consider({ kind: 'port', equipmentId: e.id, portId: port.id })
   }
   for (const t of scene.terminals) consider({ kind: 'terminal', terminalId: t.id })
-  return best
+  // Stable sort: ends at the same distance keep their scene order.
+  return found.sort((a, b) => a.distance - b.distance).map((f) => f.end)
+}
+
+/** Nearest port or wall terminal within `tolerance` mm of a plan point, or null. */
+export function findEndAt(scene: Scene, point: Point, tolerance: number): PipeEnd | null {
+  return findEndsAt(scene, point, tolerance)[0] ?? null
 }
 
 export interface PipeHit {

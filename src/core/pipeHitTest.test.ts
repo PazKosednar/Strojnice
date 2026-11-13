@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findEndAt, findPipeAt, findVertexAt } from './pipeHitTest'
+import { findEndAt, findEndsAt, findPipeAt, findVertexAt } from './pipeHitTest'
 import type { Pipe, Scene } from './scene'
 import { boxType, equipment, roomScene } from './testFixtures'
 
@@ -55,6 +55,26 @@ describe('findEndAt', () => {
 
   it('returns null away from all ends', () => {
     expect(findEndAt(scene(), { x: 500, y: 500 }, 20)).toBeNull()
+  })
+})
+
+describe('findEndsAt', () => {
+  it('returns every end at a plan position, also ports stacked above each other', () => {
+    const stacked = {
+      ...boxType,
+      ports: [
+        { ...boxType.ports[1]!, id: 'low', position: { x: 200, y: -200, z: 100 } },
+        { ...boxType.ports[1]!, id: 'high', position: { x: 200, y: -200, z: 600 } },
+      ],
+    }
+    const s: Scene = {
+      ...scene(),
+      equipment: [equipment({ id: 'idu', position: { x: 1600, y: 1300 }, type: stacked })],
+    }
+    expect(findEndsAt(s, { x: 1800, y: 1100 }, 10)).toEqual([
+      { kind: 'port', equipmentId: 'idu', portId: 'low' },
+      { kind: 'port', equipmentId: 'idu', portId: 'high' },
+    ])
   })
 })
 
