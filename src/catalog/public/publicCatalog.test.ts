@@ -31,6 +31,32 @@ describe('public catalogue', () => {
     },
   )
 
+  it.each(PUBLIC_PRODUCTS.map((p) => [p.type.name, p] as const))(
+    '%s has ports within its extents, with an outer diameter',
+    (_name, { type }) => {
+      const { shape } = type
+      const [halfW, halfD] =
+        shape.kind === 'box'
+          ? [shape.width / 2, shape.depth / 2]
+          : [shape.diameter / 2, shape.diameter / 2]
+      for (const port of type.ports) {
+        const { x, y, z } = port.position
+        expect(Math.abs(x), `${port.id}.x`).toBeLessThanOrEqual(halfW)
+        expect(Math.abs(y), `${port.id}.y`).toBeLessThanOrEqual(halfD)
+        expect(z, `${port.id}.z`).toBeGreaterThanOrEqual(0)
+        expect(z, `${port.id}.z`).toBeLessThanOrEqual(shape.height)
+        expect(port.outerDiameter, `${port.id}.outerDiameter`).toBeGreaterThan(0)
+      }
+    },
+  )
+
+  it('Viessmann Vitocal 250-A has the ports of data sheet 6246346', () => {
+    const ports = (id: string) =>
+      PUBLIC_PRODUCTS.find((p) => p.type.id === id)!.type.ports.map((p) => p.id)
+    expect(ports('viessmann-vitocal-250-a-idu-a')).toEqual(['A', 'B', 'C', 'D', 'E', 'F'])
+    expect(ports('viessmann-vitocal-250-a-odu-250-a')).toEqual(['A', 'B'])
+  })
+
   it('Viessmann dimensions match the model extents', () => {
     for (const { type } of PUBLIC_PRODUCTS.filter((p) => p.manufacturer === 'Viessmann')) {
       if (type.shape.kind !== 'box' || !type.model) throw new Error(type.name)
