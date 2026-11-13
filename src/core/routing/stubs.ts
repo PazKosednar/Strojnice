@@ -33,12 +33,24 @@ export interface Stub {
   dir: number
 }
 
+/** Allowed heights of a stub end (pipe axis): floor and ceiling minus the pipe radius. */
+export interface StubHeightRange {
+  zMin: number
+  zMax: number
+}
+
 /**
  * The straight run out of an end: `settings.portStraight` long along the end direction
  * (snapped to the nearest axis). A wall terminal first leaves the wall (half its
- * thickness), on the side of `towards`.
+ * thickness), on the side of `towards`. With `heights`, a vertical run is shortened so it
+ * ends within them (e.g. a connection facing down just above the floor).
  */
-export function stubOf(scene: Scene, end: ResolvedEnd, towards?: Point3): Stub | null {
+export function stubOf(
+  scene: Scene,
+  end: ResolvedEnd,
+  towards?: Point3,
+  heights?: StubHeightRange,
+): Stub | null {
   const geometry = endGeometry(scene, end, towards)
   if (!geometry) return null
   const dir = axisDir(geometry.direction)
@@ -53,6 +65,8 @@ export function stubOf(scene: Scene, end: ResolvedEnd, towards?: Point3): Stub |
     length += Math.ceil((wall?.thickness ?? 0) / 2)
   }
   const d = DIRS[dir]!
+  if (heights && d.z < 0) length = Math.max(0, Math.min(length, point.z - heights.zMin))
+  if (heights && d.z > 0) length = Math.max(0, Math.min(length, heights.zMax - point.z))
   return {
     point,
     end: { x: point.x + d.x * length, y: point.y + d.y * length, z: point.z + d.z * length },

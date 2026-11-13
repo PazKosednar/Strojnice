@@ -20,6 +20,9 @@ import { wallExtensions } from '../wallJoins'
 import { routeRules, type RouteRules } from './ruleField'
 import { stubOf } from './stubs'
 
+/** Index of -z in DIRS (see stubs.ts). */
+const DOWN = 5
+
 /** Wall body in its own frame: u along the axis from the start, v across, z up. */
 interface WallFrame {
   id: string
@@ -237,9 +240,22 @@ export function buildObstacleField(scene: Scene, options: ObstacleOptions): Obst
     })
   }
 
+  // A connection facing down needs room below it: under its own equipment, the pipe may
+  // pass below the connection height (e.g. leaving an outdoor unit under its casing).
+  const openBelow = new Map<string, number>()
+  for (const end of options.ownEnds ?? []) {
+    if (end.kind !== 'port') continue
+    const resolved = resolveEnd(scene, end)
+    const stub = resolved && stubOf(scene, resolved)
+    if (!stub || stub.dir !== DOWN) continue
+    const current = openBelow.get(end.equipmentId)
+    openBelow.set(end.equipmentId, Math.min(current ?? Infinity, stub.point.z))
+  }
+
   const equipment: EquipmentBlock[] = scene.equipment.map((e) => {
     const { width, depth } = footprintSize(e.type)
     const { cos, sin } = rotationTrig(e.rotation)
+    const below = own.has(e.id) ? openBelow.get(e.id) : undefined
     return {
       cx: e.position.x,
       cy: e.position.y,
@@ -248,7 +264,7 @@ export function buildObstacleField(scene: Scene, options: ObstacleOptions): Obst
       hw: width / 2,
       hd: depth / 2,
       radius: e.type.shape.kind === 'cylinder' ? e.type.shape.diameter / 2 : null,
-      z0: e.elevation,
+      z0: below === undefined ? e.elevation : Math.max(e.elevation, below),
       z1: e.elevation + equipmentHeight(e.type),
       // The pipe may come close to its own equipment (it starts there), not to others.
       inflation: own.has(e.id) ? r : r + options.spacing,

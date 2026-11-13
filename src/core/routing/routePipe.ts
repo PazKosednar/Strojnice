@@ -255,10 +255,6 @@ export function routePipe(scene: Scene, pipe: Pipe, options: RouteOptions = {}):
   if (!from || !to) return { ok: false, reason: 'missingEnd' }
   const fromPoint = endGeometry(scene, from)?.point
   const toPoint = endGeometry(scene, to)?.point
-  const a = stubOf(scene, from, toPoint)
-  const b = stubOf(scene, to, fromPoint)
-  if (!a || !b) return { ok: false, reason: 'missingEnd' }
-
   const own = [pipe.from, pipe.to].flatMap((e) => (e.kind === 'port' ? [e.equipmentId] : []))
   const field = buildObstacleField(scene, {
     pipeRadius: effectiveRadius(scene, pipe),
@@ -268,6 +264,11 @@ export function routePipe(scene: Scene, pipe: Pipe, options: RouteOptions = {}):
     ignorePipeIds: [pipe.id],
     ownEnds: [pipe.from, pipe.to],
   })
+  // Vertical straight runs stop at the floor / ceiling (pipe axis one radius away).
+  const heights = { zMin: Math.ceil(field.zMin), zMax: Math.floor(field.zMax) }
+  const a = stubOf(scene, from, toPoint, heights)
+  const b = stubOf(scene, to, fromPoint, heights)
+  if (!a || !b) return { ok: false, reason: 'missingEnd' }
   const free = (p: Point3) => !field.blocked(p) && p.z >= field.zMin && p.z <= field.zMax
   if (!free(a.end)) return { ok: false, reason: 'startBlocked' }
   if (!free(b.end)) return { ok: false, reason: 'goalBlocked' }
