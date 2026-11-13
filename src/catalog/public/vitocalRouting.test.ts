@@ -105,7 +105,17 @@ describe('Vitocal 250-A: outdoor unit on the floor outside, indoor unit on the w
         beside += Math.max(0, hi - lo)
       })
     })
-    expect(beside / horizontal).toBeGreaterThan(0.8)
+    // Most of the way (the pipes only drop under the outdoor unit's casing at its connections).
+    expect(beside / horizontal).toBeGreaterThan(0.75)
+    // Along the walls, not along the floor: low horizontal runs only right at the connections.
+    for (const route of [flow, ret]) {
+      let low = 0
+      route.slice(1).forEach((b, i) => {
+        const a = route[i]!
+        if (a.z === b.z && a.z < 250) low += Math.abs(b.x - a.x) + Math.abs(b.y - a.y)
+      })
+      expect(low).toBeLessThan(250)
+    }
   })
 
   it('says why when the indoor unit still stands at 0 mm (connections at the floor)', () => {

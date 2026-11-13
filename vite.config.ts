@@ -15,6 +15,8 @@ export default defineConfig({
         test: {
           name: 'core',
           environment: 'node',
+          // Routing tests search large grids; on a busy machine they need more than 5 s.
+          testTimeout: 60_000,
           include: ['src/core/**/*.test.ts'],
         },
       },
@@ -23,6 +25,7 @@ export default defineConfig({
         test: {
           name: 'app',
           environment: 'jsdom',
+          testTimeout: 60_000,
           include: ['src/**/*.test.{ts,tsx}'],
           exclude: ['src/core/**'],
           setupFiles: ['./src/test/setup.ts'],

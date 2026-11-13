@@ -10,8 +10,14 @@ export const ROUTING_COSTS = {
    * Distance-from-wall weight: each mm of pipe costs 1 + weight × min(distance to the
    * nearest wall face, cap) / cap. Pipes therefore prefer to run along walls.
    */
-  wallDistanceWeight: 0.5,
+  wallDistanceWeight: 1,
   wallDistanceCap: 600,
+  /**
+   * Horizontal runs with the axis lower than this (mm) cost `floorRunFactor` more per mm, so
+   * pipes leave the floor right after their connection and run along the walls instead.
+   */
+  floorRunHeight: 250,
+  floorRunFactor: 3,
   /** Cost of entering a wall body (one wall penetration). */
   wallCrossing: 3000,
   /** Cost factor per mm of pipe inside a wall body (discourages running inside walls). */

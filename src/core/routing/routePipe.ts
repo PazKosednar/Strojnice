@@ -269,6 +269,10 @@ function search(input: SearchInput): SearchResult {
         if (field.wallCrossing === 'penalized') cost += costs.softCrossingPenalty
       }
       if (field.inClearance(mid)) cost += length * costs.clearanceFactor
+      // Not along the floor: horizontal runs low down cost more (except the end edges).
+      if (d < 4 && uz < costs.floorRunHeight && !isEnd(ux, uy, uz) && !isEnd(vx, vy, vz)) {
+        cost += length * costs.floorRunFactor
+      }
       const soft = ruled + field.softViolations(mid)
       if (soft > 0) cost += length * costs.softRuleFactor * soft
       if (d !== dir) cost += costs.bend
