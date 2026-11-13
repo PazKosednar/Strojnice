@@ -1,6 +1,8 @@
 import { endDiameter, resolveEnd } from './pipeEnds'
+import { effectiveRadius } from './pipeSize'
+import { planBoxCorners } from './planBox'
 import { stubOf } from './routing/stubs'
-import type { Pipe, Point3, Scene } from './scene'
+import type { Obstacle, Pipe, Point3, Scene } from './scene'
 import { footprintsOverlap, rangesOverlap } from './collisions'
 import { equipmentFootprint, equipmentHeight, type Footprint } from './equipmentGeometry'
 
@@ -43,8 +45,8 @@ interface SegmentBox {
   z1: number
 }
 
-function segmentBoxes(pipe: Pipe, skipEnds: boolean): SegmentBox[] {
-  const r = pipe.outerDiameter / 2
+function segmentBoxes(scene: Scene, pipe: Pipe, skipEnds: boolean): SegmentBox[] {
+  const r = effectiveRadius(scene, pipe)
   const boxes: SegmentBox[] = []
   const last = pipe.route.length - 2
   pipe.route.forEach((p, i) => {
@@ -77,9 +79,14 @@ const boxFootprint = (b: SegmentBox): Footprint => ({
 const boxesOverlap = (a: SegmentBox, b: SegmentBox) =>
   a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1 && a.z0 < b.z1 && b.z0 < a.z1
 
-/** What a route collides with: equipment (not its own ends) and other pipes. */
+const obstacleFootprint = (o: Obstacle): Footprint => ({
+  kind: 'polygon',
+  points: planBoxCorners(o),
+})
+
+/** What a route collides with: equipment (not its own ends), obstacles and other pipes. */
 export interface PipeClash {
-  kind: 'equipment' | 'pipe'
+  kind: 'equipment' | 'obstacle' | 'pipe'
   id: string
 }
 
@@ -91,7 +98,7 @@ export function pipeClashes(scene: Scene, pipe: Pipe): PipeClash[] {
   const own = new Set(
     [pipe.from, pipe.to].flatMap((e) => (e.kind === 'port' ? [e.equipmentId] : [])),
   )
-  const boxes = segmentBoxes(pipe, true)
+  const boxes = segmentBoxes(scene, pipe, true)
   const clashes: PipeClash[] = []
   for (const e of scene.equipment) {
     if (own.has(e.id)) continue
@@ -107,9 +114,18 @@ export function pipeClashes(scene: Scene, pipe: Pipe): PipeClash[] {
     )
     if (hit) clashes.push({ kind: 'equipment', id: e.id })
   }
+  for (const o of scene.obstacles) {
+    const body = { footprint: obstacleFootprint(o), z0: o.bottom, z1: o.bottom + o.height }
+    const hit = boxes.some(
+      (b) =>
+        rangesOverlap(b.z0, b.z1, body.z0, body.z1) &&
+        footprintsOverlap(boxFootprint(b), body.footprint, 0),
+    )
+    if (hit) clashes.push({ kind: 'obstacle', id: o.id })
+  }
   for (const other of scene.pipes) {
     if (other.id === pipe.id) continue
-    const others = segmentBoxes(other, false)
+    const others = segmentBoxes(scene, other, false)
     if (boxes.some((b) => others.some((o) => boxesOverlap(b, o)))) {
       clashes.push({ kind: 'pipe', id: other.id })
     }

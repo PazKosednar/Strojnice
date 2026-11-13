@@ -2,6 +2,8 @@ import { clearanceZones, type ClearanceSide } from './clearances'
 import { bodiesCollide, type Body } from './collisions'
 import { equipmentFootprint, equipmentHeight } from './equipmentGeometry'
 import { diameterMismatch, pipeClashes, routeDisconnected, type PipeClash } from './pipeChecks'
+import { checkRules } from './rules/checkRules'
+import type { RuleViolation } from './rules/violation'
 import type { Equipment, Scene } from './scene'
 import { wallExtensions, wallOutline } from './wallJoins'
 
@@ -27,8 +29,10 @@ export type SceneWarning =
   | { kind: 'pipeDisconnected'; pipeId: string }
   /** The two ends of a pipe have different outer diameters. */
   | { kind: 'pipeDiameterMismatch'; pipeId: string }
-  /** A manual route runs through equipment or another pipe. */
+  /** A manual route runs through equipment, an obstacle or another pipe. */
   | { kind: 'pipeClash'; pipeId: string; with: PipeClash }
+  /** A pipe breaks an effective project rule (`pipeId` = the first pipe involved). */
+  | { kind: 'ruleViolation'; pipeId: string; violation: RuleViolation }
 
 export function equipmentBody(equipment: Equipment): Body {
   return {
@@ -51,7 +55,7 @@ export function wallBodies(scene: Scene): { id: string; body: Body }[] {
   }))
 }
 
-/** All collisions, clearance violations and unknown systems in the scene. */
+/** All collisions, clearance and rule violations and unknown systems in the scene. */
 export function sceneWarnings(scene: Scene): SceneWarning[] {
   const warnings: SceneWarning[] = []
   const walls = wallBodies(scene)
@@ -121,6 +125,10 @@ export function sceneWarnings(scene: Scene): SceneWarning[] {
     if (diameterMismatch(scene, pipe)) {
       warnings.push({ kind: 'pipeDiameterMismatch', pipeId: pipe.id })
     }
+  }
+
+  for (const violation of checkRules(scene)) {
+    warnings.push({ kind: 'ruleViolation', pipeId: violation.pipeIds[0]!, violation })
   }
 
   for (const { equipment } of items) {

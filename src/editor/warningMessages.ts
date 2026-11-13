@@ -3,6 +3,7 @@ import { endLabel, resolveEnd } from '../core/pipeEnds'
 import type { Pipe, Scene } from '../core/scene'
 import type { ObstacleRef, SceneWarning } from '../core/sceneWarnings'
 import type { Selection } from '../stores/editorStore'
+import { violationText } from './ruleTexts'
 
 const SIDES: Record<ClearanceSide, string> = {
   front: 'spredaj',
@@ -49,12 +50,20 @@ export function warningText(warning: SceneWarning, scene: Scene): string {
     case 'pipeDiameterMismatch':
       return `${pipeOf(warning.pipeId)}: premera na koncih se razlikujeta.`
     case 'pipeClash': {
+      const obstacleTag = scene.obstacles.find((o) => o.id === warning.with.id)?.tag ?? '?'
       const what =
         warning.with.kind === 'equipment'
           ? `napravo ${tagOf(warning.with.id)}`
-          : `drugo cev (${pipeOf(warning.with.id).replace('Cev ', '')})`
+          : warning.with.kind === 'obstacle'
+            ? `oviro ${obstacleTag}`
+            : `drugo cev (${pipeOf(warning.with.id).replace('Cev ', '')})`
       return `${pipeOf(warning.pipeId)}: trasa gre skozi ${what}.`
     }
+    case 'ruleViolation':
+      return violationText(scene, warning.violation, (id) => {
+        const pipe = scene.pipes.find((p) => p.id === id)
+        return pipe ? pipeLabel(scene, pipe) : '?'
+      })
   }
 }
 
