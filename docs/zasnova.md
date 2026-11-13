@@ -109,7 +109,30 @@ Prvotni obseg:
 - Postavljanje naprav v prostor, vrtenje, snap na steno
 - Kontrola trkov (naprava–stena, naprava–naprava, servisni odmiki)
 
-### Faza 3: samodejno speljevanje cevi
+### Faza 3: samodejno speljevanje cevi (končana)
+
+Izvedeno: zunanji premer na priključkih (vnese uporabnik), izhodi v steni, cevi z
+pravilom »isti sistem, en priključek – ena cev«, scena verzije 3 z migracijo iz 1 in 2,
+A* po 3D mreži s kaznimi za kolena, oddaljenost od sten, prečkanje sten in cone odmikov,
+rezervacija izhodnih odsekov drugih priključkov, preboji sten, Web Worker z omejitvijo
+časa (2 s na cev, varovalka 5 s) in velikosti mreže (preverjena pred gradnjo), ponovno
+speljevanje ob premiku naprave (zamik 500 ms, razveljavi se skupaj s premikom), ročni
+popravki (vlečenje odseka, dodajanje in brisanje oglišča, višina odseka), legenda
+sistemov, cevi in izhodi v 3D, čist 3D pogled (skrivanje sprednjih sten s histerezo,
+nizek obris, pogled od zgoraj).
+
+Omejitve in odprto:
+
+- Začetne vrednosti razmika med cevmi (50 mm), ravnega odseka (100 mm) in vse kazni
+  niso iz standarda; uporabnik jih nastavi po projektni dokumentaciji.
+- Speljevanje je zaporedno (prej speljane cevi so ovira za kasnejše); ni globalne
+  optimizacije vrstnega reda.
+- Pri trkih in speljevanju se odprtine upoštevajo, cone odmikov pa le kot cena.
+- Odseki, ki potekajo navpično, se v 2D ne vlečejo (urejajo se prek višine sosednjih
+  vodoravnih odsekov).
+- Navpični odseki se v 2D prikažejo kot krog; višina cevi v tlorisu ni kotirana (faza 4).
+
+Prvotni obseg:
 
 - Iskanje poti med dvema priključkoma po 3D mreži
 - Pravokotne trase (samo osni odseki in koleni)

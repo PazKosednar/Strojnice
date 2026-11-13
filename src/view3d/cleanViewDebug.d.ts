@@ -3,6 +3,11 @@ export {}
 
 declare global {
   interface Window {
-    __cleanView?: { hidden: Record<string, boolean>; top: boolean }
+    __cleanView?: {
+      hidden: Record<string, boolean>
+      top: boolean
+      /** Camera position in plan mm (x, y) and height (z). */
+      camera: { x: number; y: number; z: number }
+    }
   }
 }

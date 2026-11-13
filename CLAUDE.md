@@ -73,11 +73,32 @@ TypeScript je zaklenjen na `~6.0`, ker typescript-eslint še ne podpira TS 7.
   Cona odmika je kvader ob vsaki strani naprave v njeni višini, `top` nad njo.
 - **Predloge tipov** (`catalog/templates.ts`) določajo samo obliko, predpono in montažo.
   Mer, priključkov in odmikov ne vsebujejo; vnese jih uporabnik.
-- **Verzija scene:** `SCENE_VERSION = 2`. Starejše scene nadgradi `core/sceneMigrations.ts`
+- **Verzija scene:** `SCENE_VERSION = 3`. Starejše scene nadgradi `core/sceneMigrations.ts`
   (klicano iz `parseScene`). Vsaka sprememba shranjene oblike dobi novo verzijo, korak
   migracije in test.
 - **Katalog** je tabela `equipment_types` (na uporabnika, RLS). `definition` se ob branju
   validira (`parseEquipmentType`); neberljiv zapis se prikaže kot napaka, ne uporabi.
+
+## Dogovori modela (faza 3: cevi)
+
+- **Zunanji premer cevi** (`Port.outerDiameter`, `WallTerminal.outerDiameter`) vnese
+  uporabnik; iz besedila `size` se nikoli ne izpelje. Priključka brez premera ni mogoče
+  povezati.
+- **Cev** (`Pipe`) povezuje dva konca istega sistema (`port` ali `terminal`); vsak konec ima
+  največ eno cev. `route` so samo oglišča osno vzporednih odsekov (cele mm), od `from` do
+  `to`; prazna trasa pomeni, da poti ni (`routeError`). Različna premera sta opozorilo.
+- **Izhod v steni** (`WallTerminal`) leži na osi stene; oznake izhodov (`IZ-NN`) so enolične
+  skupaj z oznakami naprav.
+- **Samodejne cevi** (`mode: 'auto'`) se speljejo znova, ko se premakne njihov konec;
+  rezultat se doda trenutnemu koraku zgodovine (`editorStore.amend`), zato ga Ctrl+Z
+  razveljavi skupaj s premikom. **Ročne cevi** se nikoli ne spremenijo samodejno.
+- **Speljevanje** (`core/routing/`) je A* po 3D mreži (`settings.routingGrid`) z izhodnim
+  ravnim odsekom (`settings.portStraight`). Vse cene in omejitve so v
+  `core/routing/costs.ts` (niso standardi). Velikost mreže se preveri pred gradnjo
+  (`buildGrid`), čas na cev je omejen, računanje teče v Web Workerju (`src/routing/`).
+- **Preboji sten** se ne shranjujejo: vedno se izračunajo iz trase (`wallCrossings`).
+- **Čist 3D pogled:** pravilo je čista funkcija `core/wallVisibility.ts` (zunanja normala,
+  prag s histerezo, pogled od zgoraj); uporablja se v `useFrame` brez pisanja v store.
 
 ## Ukazi
 
@@ -109,6 +130,7 @@ src/
   editor/      urejevalnik: orodna vrstica, stranska plošča, bližnjice, shranjevanje
   catalog/     katalog naprav: predloge, obrazec tipa s predogledom, plošča
   editor2d/    2D tloris (SVG): pogled, orodja, sloji
+  routing/     Web Worker za speljevanje cevi, samodejno speljevanje ob spremembah
   view3d/      3D prikaz (React Three Fiber), samo bere sceno iz stora
   components/  skupne React komponente
   pages/       strani (ena datoteka na pot)

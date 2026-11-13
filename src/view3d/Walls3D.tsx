@@ -80,7 +80,11 @@ export function Walls3D({ boxes, baseBoxes, facings, mode, selectedWallId }: Pro
     // Development only (removed from production builds): lets browser tests read which
     // walls the clean view currently hides.
     if (import.meta.env.DEV) {
-      window.__cleanView = { hidden: Object.fromEntries(hidden.current), top: top.current }
+      window.__cleanView = {
+        hidden: Object.fromEntries(hidden.current),
+        top: top.current,
+        camera: cam,
+      }
     }
   })
 

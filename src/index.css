@@ -772,3 +772,10 @@ select[aria-invalid='true'] {
 .plan2d-svg.tool-terminal {
   cursor: crosshair;
 }
+
+/* The legend lives in a toolbar row: keep its pressed buttons light and readable. */
+.toolbar .legend button[aria-pressed='true'] {
+  background: #eef4ff;
+  border-color: #2563eb;
+  color: #111827;
+}
