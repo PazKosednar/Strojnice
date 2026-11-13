@@ -195,13 +195,15 @@ describe('routing with obstacles, zones and rules', () => {
       distance: 40,
     }
     for (const mm of [0, 30]) {
-      let [scene, first] = connect(
+      const [connected, first] = connect(
         { ...insulated(twoUnits(), mm), rules: [rule] },
         port('a', 'c'),
         port('b', 'c'),
         'p1',
       )
-      scene = unwrap(setPipeRoute(scene, 'p1', { route: expectOk(routePipe(scene, first)).route }))
+      const scene = unwrap(
+        setPipeRoute(connected, 'p1', { route: expectOk(routePipe(connected, first)).route }),
+      )
       const [withSecond, second] = connect(scene, port('a', 's'), port('b', 's'), 'p2')
       const route = expectOk(routePipe(withSecond, second)).route
       const done = unwrap(setPipeRoute(withSecond, 'p2', { route }))
@@ -274,8 +276,8 @@ describe('routing with obstacles, zones and rules', () => {
     scene = unwrap(addEquipment(scene, { id: 'o', type: odu, position: { x: 800, y: 600 } }))
     scene = unwrap(addEquipment(scene, { id: 'i', type: idu, position: { x: 2400, y: 1500 } }))
     expect(scene.settings.pipeSpacing).toBeGreaterThan(75 - 28)
-    let [s1, flow] = connect(scene, port('o', 'A'), port('i', 'C'), 'f')
-    s1 = unwrap(setPipeRoute(s1, 'f', { route: expectOk(routePipe(s1, flow)).route }))
+    const [s0, flow] = connect(scene, port('o', 'A'), port('i', 'C'), 'f')
+    const s1 = unwrap(setPipeRoute(s0, 'f', { route: expectOk(routePipe(s0, flow)).route }))
     const [s2, ret] = connect(s1, port('i', 'D'), port('o', 'B'), 'r')
     expectOk(routePipe(s2, ret))
   })
