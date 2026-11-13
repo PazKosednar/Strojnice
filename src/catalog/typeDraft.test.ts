@@ -133,3 +133,36 @@ describe('previewType', () => {
     expect(previewType(draft)?.ports.map((p) => p.id)).toEqual(['p2'])
   })
 })
+
+describe('port outer diameter and 3D model in the form', () => {
+  const withDiameter = {
+    ...boxType,
+    ports: boxType.ports.map((p, i) => (i === 0 ? { ...p, outerDiameter: 22 } : p)),
+  }
+
+  it('keeps entered diameters (and leaves missing ones empty) when a type is edited', () => {
+    const draft = draftFromType(withDiameter)
+    expect(draft.ports.map((p) => p.outerDiameter)).toEqual(['22', ''])
+    expect(draftToType(draft)).toEqual({ ok: true, type: withDiameter })
+  })
+
+  it('rejects an invalid diameter', () => {
+    const draft = draftFromType(withDiameter)
+    draft.ports[1]!.outerDiameter = '-5'
+    const result = draftToType(draft)
+    expect(!result.ok && result.errors['ports.1.outerDiameter']).toBe(
+      'Premer mora biti celo število v mm, večje od 0, ali prazno.',
+    )
+  })
+
+  it('keeps the attached 3D model', () => {
+    const model = {
+      path: '11111111-2222-3333-4444-555555555555/66666666-7777-8888-9999-000000000000/a.glb',
+      fileName: 'a.glb',
+      rotation: 180 as const,
+      bounds: { min: { x: -1, y: 0, z: -1 }, max: { x: 1, y: 2, z: 1 } },
+    }
+    const result = draftToType(draftFromType({ ...boxType, model }))
+    expect(result.ok && result.type.model).toEqual(model)
+  })
+})

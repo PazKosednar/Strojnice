@@ -1,6 +1,7 @@
 import { useId, useState, type ReactNode, type SubmitEvent } from 'react'
 import type { EquipmentType, Mounting, SystemDef } from '../core/scene'
 import { newId } from '../editor/newId'
+import { ModelSection } from './ModelSection'
 import { PortsTable } from './PortsTable'
 import {
   draftToType,
@@ -160,6 +161,18 @@ export function EquipmentTypeForm({ title, initial, systems, onSave, onCancel }:
               numberInput('diameter', 'Premer')
             )}
             {numberInput('height', 'Višina')}
+
+            <h3>3D model proizvajalca (neobvezno)</h3>
+            <ModelSection
+              typeId={draft.id}
+              model={draft.model}
+              onChange={(model) => set({ model })}
+              onUseDimensions={({ width, depth, height }) =>
+                draft.shapeKind === 'box'
+                  ? set({ width: String(width), depth: String(depth), height: String(height) })
+                  : set({ diameter: String(Math.max(width, depth)), height: String(height) })
+              }
+            />
 
             <h3>Servisni odmiki (neobvezno)</h3>
             {(Object.keys(CLEARANCE_LABELS) as ClearanceSideKey[]).map((side) => (

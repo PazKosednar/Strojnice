@@ -1,6 +1,7 @@
 import { MAX_TAG_PREFIX_LENGTH } from '../core/equipmentType'
 import type {
   Clearances,
+  EquipmentModel,
   EquipmentShape,
   EquipmentType,
   Mounting,
@@ -19,6 +20,8 @@ export interface PortDraft {
   z: string
   direction: PortDirection
   size: string
+  /** Outer pipe diameter (mm); empty = not entered yet. */
+  outerDiameter: string
 }
 
 export type ClearanceSideKey = keyof Clearances
@@ -37,6 +40,8 @@ export interface TypeDraft {
   /** Empty means no clearance on that side. */
   clearances: Record<ClearanceSideKey, string>
   ports: PortDraft[]
+  /** Optional manufacturer 3D model (already uploaded). */
+  model?: EquipmentModel
 }
 
 const EMPTY_CLEARANCES: Record<ClearanceSideKey, string> = {
@@ -96,12 +101,24 @@ export function draftFromType(type: EquipmentType): TypeDraft {
       z: String(p.position.z),
       direction: p.direction,
       size: p.size,
+      outerDiameter: p.outerDiameter === undefined ? '' : String(p.outerDiameter),
     })),
+    ...(type.model ? { model: type.model } : {}),
   }
 }
 
 export function emptyPortDraft(id: string, systemId: string): PortDraft {
-  return { id, name: '', systemId, x: '', y: '', z: '', direction: '-y', size: '' }
+  return {
+    id,
+    name: '',
+    systemId,
+    x: '',
+    y: '',
+    z: '',
+    direction: '-y',
+    size: '',
+    outerDiameter: '',
+  }
 }
 
 const parseInteger = (text: string): number | null =>
@@ -115,6 +132,7 @@ const MESSAGES = {
   portName: 'Vnesi ime priključka.',
   portSystem: 'Izberi sistem.',
   portCoordinate: 'Vnesi celo število v mm.',
+  portDiameter: 'Premer mora biti celo število v mm, večje od 0, ali prazno.',
 }
 
 /** Field key -> Slovenian message. Port fields use `ports.<index>.<field>`. */
@@ -162,6 +180,11 @@ export function draftToType(draft: TypeDraft): DraftResult {
     }
     if (p.name.trim() === '') errors[`ports.${i}.name`] = MESSAGES.portName
     if (p.systemId === '') errors[`ports.${i}.systemId`] = MESSAGES.portSystem
+    const diameterText = p.outerDiameter.trim()
+    const diameter = diameterText === '' ? undefined : parseInteger(diameterText)
+    if (diameter === null || (diameter !== undefined && diameter <= 0)) {
+      errors[`ports.${i}.outerDiameter`] = MESSAGES.portDiameter
+    }
     return {
       id: p.id,
       name: p.name.trim(),
@@ -169,6 +192,7 @@ export function draftToType(draft: TypeDraft): DraftResult {
       position: { x: coordinate('x'), y: coordinate('y'), z: coordinate('z') },
       direction: p.direction,
       size: p.size.trim(),
+      ...(typeof diameter === 'number' && diameter > 0 ? { outerDiameter: diameter } : {}),
     }
   })
 
@@ -182,6 +206,7 @@ export function draftToType(draft: TypeDraft): DraftResult {
     ports,
   }
   if (Object.values(clearances).some((v) => v > 0)) type.clearances = clearances
+  if (draft.model) type.model = draft.model
   return { ok: true, type }
 }
 

@@ -39,6 +39,7 @@ export function PortsTable({ ports, systems, errors, onChange, onAdd }: Props) {
               <th>z</th>
               <th>Smer</th>
               <th>Dimenzija</th>
+              <th>⌀ zun. (mm)</th>
               <th />
             </tr>
           </thead>
@@ -110,6 +111,16 @@ export function PortsTable({ ports, systems, errors, onChange, onAdd }: Props) {
                     />
                   </td>
                   <td>
+                    <input
+                      className="coordinate"
+                      inputMode="numeric"
+                      aria-label={`Zunanji premer priključka ${n}`}
+                      aria-invalid={invalid(i, 'outerDiameter')}
+                      value={port.outerDiameter}
+                      onChange={(e) => update(i, { outerDiameter: e.target.value })}
+                    />
+                  </td>
+                  <td>
                     <button
                       type="button"
                       aria-label={`Izbriši priključek ${n}`}
@@ -130,7 +141,8 @@ export function PortsTable({ ports, systems, errors, onChange, onAdd }: Props) {
       <p className="muted small">
         Položaj je v mm v koordinatah naprave: izhodišče je središče tlorisa na spodnjem robu, x
         desno (gledano od spredaj), +y proti hrbtni strani, z navzgor. Smer pove, kam cev zapusti
-        napravo. Dimenzija je prosto besedilo (npr. DN25) in se ne preverja.
+        napravo. Dimenzija je prosto besedilo (npr. DN25) in se ne preverja. Zunanji premer cevi
+        vneseš iz dokumentacije; brez njega priključka ni mogoče povezati.
       </p>
     </div>
   )
