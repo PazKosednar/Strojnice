@@ -29,6 +29,11 @@ export const ROUTING_COSTS = {
   softRuleFactor: 5,
   /** Extra cost of a wall penetration when a soft rule says not to cross walls. */
   softCrossingPenalty: 3000,
+  /**
+   * Cost per mm is multiplied by this where a pipe runs alongside its circuit partner (flow
+   * next to return) at the spacing, so the pair stays together in one corridor.
+   */
+  parallelFactor: 0.6,
 } as const
 
 /** Limits that keep routing fast and bounded (see docs/zasnova.md, faza 3). */
@@ -45,6 +50,10 @@ export const ROUTING_LIMITS = {
   maxExpansions: 3_000_000,
   /** How often the clock is checked (expansions). */
   clockEvery: 4096,
+  /** Joint routing: how many times blocking pipes may be ripped up and re-routed. */
+  ripUpRounds: 3,
+  /** Joint routing: time budget for all pipes together (ms). */
+  batchBudgetMs: 30_000,
 } as const
 
 export type RoutingCosts = { -readonly [K in keyof typeof ROUTING_COSTS]: number }

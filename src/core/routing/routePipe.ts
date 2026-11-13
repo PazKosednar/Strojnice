@@ -35,7 +35,15 @@ export type RouteOutcome =
     }
   | { ok: false; reason: RouteFailure; gridStep?: number }
 
+/** Route of the circuit partner to run alongside, and the axis distance to keep. */
+export interface Companion {
+  route: readonly Point3[]
+  distance: number
+}
+
 export interface RouteOptions {
+  /** Routes to run alongside (rewarded with `parallelFactor`). */
+  companions?: readonly Companion[]
   costs?: Partial<RoutingCosts>
   limits?: Partial<RoutingLimits>
   /** Clock in ms; injectable for tests. */
@@ -84,12 +92,44 @@ interface SearchInput {
   goal: Point3
   /** Direction in which the route should arrive at the goal (towards the connection). */
   goalArriveDir: number
+  /** True when the edge runs alongside a companion route at its distance. */
+  alongside: (a: Point3, b: Point3) => boolean
+  hasCompanions: boolean
   costs: RoutingCosts
   limits: RoutingLimits
   now: () => number
 }
 
 type SearchResult = { ok: true; path: Point3[] } | { ok: false; reason: 'noPath' | 'timeout' }
+
+/**
+ * Edge test for running alongside companion routes: same direction, within the companion
+ * segment's extent, axes between `distance` and `distance + step` apart (the nearest grid
+ * line at or beyond the required distance), side by side or one above the other.
+ */
+function alongsideTest(
+  companions: readonly Companion[],
+  step: number,
+): (a: Point3, b: Point3) => boolean {
+  const runs = companions.flatMap((c) =>
+    c.route.slice(1).map((q, i) => ({ a: c.route[i]!, b: q, distance: c.distance })),
+  )
+  return (a, b) => {
+    const axis = a.x !== b.x ? 'x' : a.y !== b.y ? 'y' : 'z'
+    const mid = (a[axis] + b[axis]) / 2
+    for (const run of runs) {
+      const runAxis = run.a.x !== run.b.x ? 'x' : run.a.y !== run.b.y ? 'y' : 'z'
+      if (runAxis !== axis) continue
+      if (mid <= Math.min(run.a[axis], run.b[axis]) || mid >= Math.max(run.a[axis], run.b[axis])) {
+        continue
+      }
+      const [p, q] = (['x', 'y', 'z'] as const).filter((k) => k !== axis)
+      const apart = Math.hypot(a[p!] - run.a[p!], a[q!] - run.a[q!])
+      if (apart >= run.distance && apart < run.distance + step) return true
+    }
+    return false
+  }
+}
 
 /** A* over (grid node × arrival direction), so bends can be priced. */
 function search(input: SearchInput): SearchResult {
@@ -142,7 +182,11 @@ function search(input: SearchInput): SearchResult {
   const heap = new MinHeap()
   const [gx, gy, gz] = [input.goal.x, input.goal.y, input.goal.z]
   // Lower bound of the cost per mm: preferred zones make pipe cheaper than its length.
-  const hScale = field.hasPreferredZones ? Math.min(1, costs.preferredZoneFactor) : 1
+  const hScale = Math.min(
+    1,
+    field.hasPreferredZones ? costs.preferredZoneFactor : 1,
+    input.hasCompanions ? costs.parallelFactor : 1,
+  )
   const h = (x: number, y: number, z: number) =>
     hScale * (Math.abs(x - gx) + Math.abs(y - gy) + Math.abs(z - gz))
   const [sx, sy, sz] = [input.start.x, input.start.y, input.start.z]
@@ -207,6 +251,12 @@ function search(input: SearchInput): SearchResult {
       const length = Math.abs(vx - ux) + Math.abs(vy - uy) + Math.abs(vz - uz)
       const near = Math.min(wallDistance(jx, jy), costs.wallDistanceCap) / costs.wallDistanceCap
       let cost = length * (1 + costs.wallDistanceWeight * near)
+      if (
+        input.hasCompanions &&
+        input.alongside({ x: ux, y: uy, z: uz }, { x: vx, y: vy, z: vz })
+      ) {
+        cost *= costs.parallelFactor
+      }
       const zone = field.zoneAt(mid)
       if (zone === 'avoid') cost *= costs.avoidZoneFactor
       else if (zone === 'preferred') cost *= costs.preferredZoneFactor
@@ -282,9 +332,12 @@ export function routePipe(scene: Scene, pipe: Pipe, options: RouteOptions = {}):
   )
   if (!grid) return { ok: false, reason: 'tooLarge' }
 
+  const companions = options.companions ?? []
   const result = search({
     grid,
     field,
+    hasCompanions: companions.length > 0,
+    alongside: alongsideTest(companions, grid.step),
     start: a.end,
     startDir: a.dir,
     goal: b.end,
