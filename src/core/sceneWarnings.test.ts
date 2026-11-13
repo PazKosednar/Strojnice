@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { clearanceZones } from './clearances'
-import { equipmentWithConflicts, sceneWarnings } from './sceneWarnings'
+import { equipmentWithConflicts, sceneWarnings as allWarnings } from './sceneWarnings'
+import type { Scene } from './scene'
 import { boxType, cylinderType, equipment, roomScene } from './testFixtures'
+
+/** Warnings other than the mounting-height reminder (the test box is wall-mounted at 0). */
+const sceneWarnings = (scene: Scene) =>
+  allWarnings(scene).filter((w) => w.kind !== 'wallMountedAtFloor')
 
 describe('clearanceZones', () => {
   it('creates a zone per side with a positive clearance', () => {
@@ -155,5 +160,25 @@ describe('equipmentWithConflicts', () => {
       { kind: 'unknownSystem', equipmentId: 'd', portId: 'p', systemId: 's' },
     ])
     expect([...ids].sort()).toEqual(['a', 'b', 'c'])
+  })
+})
+
+describe('wall-mounted equipment at 0 mm', () => {
+  it('asks for the mounting height until one is entered', () => {
+    const atFloor = {
+      ...roomScene(),
+      equipment: [equipment({ id: 'e1', position: { x: 1600, y: 900 } })],
+    }
+    expect(allWarnings(atFloor)).toContainEqual({ kind: 'wallMountedAtFloor', equipmentId: 'e1' })
+    const mounted = {
+      ...atFloor,
+      equipment: [equipment({ id: 'e1', position: { x: 1600, y: 900 }, elevation: 1200 })],
+    }
+    expect(allWarnings(mounted).some((w) => w.kind === 'wallMountedAtFloor')).toBe(false)
+    const floorType = {
+      ...atFloor,
+      equipment: [equipment({ id: 'e1', position: { x: 1600, y: 900 }, type: cylinderType })],
+    }
+    expect(allWarnings(floorType).some((w) => w.kind === 'wallMountedAtFloor')).toBe(false)
   })
 })

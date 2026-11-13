@@ -54,6 +54,10 @@ export function routeErrorMessage(scene: Scene, pipe: Pipe, reason: RouteFailure
     return resolved ? endLabel(resolved) : '?'
   }
   switch (reason) {
+    case 'startAtFloor':
+      return `Priključek ${label(pipe.from)} je obrnjen navzdol tik nad tlemi, zato cev nima prostora. Napravi vnesi višino montaže (Višina od tal).`
+    case 'goalAtFloor':
+      return `Priključek ${label(pipe.to)} je obrnjen navzdol tik nad tlemi, zato cev nima prostora. Napravi vnesi višino montaže (Višina od tal).`
     case 'startBlocked':
       return `Priključek ${label(pipe.from)} je zaprt.`
     case 'goalBlocked':

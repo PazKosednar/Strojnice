@@ -21,6 +21,8 @@ export type SceneWarning =
   | { kind: 'collision'; equipmentId: string; other: ObstacleRef }
   /** Something stands in the required free space of `equipmentId`. */
   | { kind: 'clearance'; equipmentId: string; side: ClearanceSide; intruder: ObstacleRef }
+  /** Wall-mounted equipment at 0 mm: the user has not entered its mounting height yet. */
+  | { kind: 'wallMountedAtFloor'; equipmentId: string }
   /** A port refers to a system that is not defined in this project. */
   | { kind: 'unknownSystem'; equipmentId: string; portId: string; systemId: string }
   /** Automatic routing found no route; `reason` is the stored Slovenian message. */
@@ -124,6 +126,12 @@ export function sceneWarnings(scene: Scene): SceneWarning[] {
   for (const pipe of scene.pipes) {
     if (diameterMismatch(scene, pipe)) {
       warnings.push({ kind: 'pipeDiameterMismatch', pipeId: pipe.id })
+    }
+  }
+
+  for (const { equipment } of items) {
+    if (equipment.type.mounting === 'wall' && equipment.elevation === 0) {
+      warnings.push({ kind: 'wallMountedAtFloor', equipmentId: equipment.id })
     }
   }
 

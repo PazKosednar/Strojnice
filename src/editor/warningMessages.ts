@@ -59,6 +59,8 @@ export function warningText(warning: SceneWarning, scene: Scene): string {
             : `drugo cev (${pipeOf(warning.with.id).replace('Cev ', '')})`
       return `${pipeOf(warning.pipeId)}: trasa gre skozi ${what}.`
     }
+    case 'wallMountedAtFloor':
+      return `${tagOf(warning.equipmentId)} je stenska naprava na višini 0 mm. V lastnostih vnesi višino montaže (Višina od tal), sicer cevi iz spodnjih priključkov nimajo prostora.`
     case 'ruleViolation':
       return violationText(scene, warning.violation, (id) => {
         const pipe = scene.pipes.find((p) => p.id === id)

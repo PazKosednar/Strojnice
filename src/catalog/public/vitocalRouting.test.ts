@@ -107,4 +107,12 @@ describe('Vitocal 250-A: outdoor unit on the floor outside, indoor unit on the w
     })
     expect(beside / horizontal).toBeGreaterThan(0.8)
   })
+
+  it('says why when the indoor unit still stands at 0 mm (connections at the floor)', () => {
+    let scene = roomScene()
+    scene = unwrap(addEquipment(scene, { id: 'odu', type: ODU, position: { x: -800, y: 900 } }))
+    scene = unwrap(addEquipment(scene, { id: 'idu', type: IDU, position: { x: 1600, y: 1517 } }))
+    scene = unwrap(addPipe(scene, { id: 'p', from: port('idu', 'C'), to: port('odu', 'A') }))
+    expect(routePipe(scene, scene.pipes[0]!, LIMITS)).toEqual({ ok: false, reason: 'startAtFloor' })
+  })
 })

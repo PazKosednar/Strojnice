@@ -63,6 +63,13 @@ export function useEquipmentTool(active: boolean) {
       // Back to the select tool with the new item selected, so it can be adjusted at once.
       setTool('select')
       select({ kind: 'equipment', id })
+      if (type.mounting === 'wall') {
+        useEditorStore
+          .getState()
+          .setMessage(
+            'Stenska naprava je postavljena na višino 0 mm. V lastnostih vnesi višino montaže (Višina od tal) iz navodil proizvajalca.',
+          )
+      }
     },
     renderOverlay(view: View): ReactNode {
       if (!active || !type || !ghost) return null

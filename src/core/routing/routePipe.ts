@@ -16,6 +16,9 @@ export type RouteFailure =
   /** The straight run out of the start / end is blocked. */
   | 'startBlocked'
   | 'goalBlocked'
+  /** A connection faces down at the floor: no room for a pipe below it. */
+  | 'startAtFloor'
+  | 'goalAtFloor'
   /** The search finished without reaching the goal. */
   | 'noPath'
   /** The time or expansion budget ran out. */
@@ -320,6 +323,8 @@ export function routePipe(scene: Scene, pipe: Pipe, options: RouteOptions = {}):
   const b = stubOf(scene, to, fromPoint, heights)
   if (!a || !b) return { ok: false, reason: 'missingEnd' }
   const free = (p: Point3) => !field.blocked(p) && p.z >= field.zMin && p.z <= field.zMax
+  if (a.end.z < field.zMin) return { ok: false, reason: 'startAtFloor' }
+  if (b.end.z < field.zMin) return { ok: false, reason: 'goalAtFloor' }
   if (!free(a.end)) return { ok: false, reason: 'startBlocked' }
   if (!free(b.end)) return { ok: false, reason: 'goalBlocked' }
 
