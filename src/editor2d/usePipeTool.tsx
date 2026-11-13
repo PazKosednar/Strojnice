@@ -4,8 +4,8 @@ import { findEndsAt } from '../core/pipeHitTest'
 import { addPipe, checkConnection } from '../core/pipeOps'
 import type { PipeEnd } from '../core/scene'
 import { newId } from '../editor/newId'
-import { sceneErrorMessage } from '../editor/sceneErrorMessages'
 import { selectScene, useEditorStore } from '../stores/editorStore'
+import { connectionRejection } from './connectMessage'
 import { pickEnd } from './pickEnd'
 import { isTyping, type PointerInfo } from './toolTypes'
 
@@ -74,7 +74,7 @@ export function usePipeTool(active: boolean) {
       }
       const from = source!
       const check = checkConnection(scene, from, pick.end)
-      if (!check.ok) return setMessage(sceneErrorMessage(check.error))
+      if (!check.ok) return setMessage(connectionRejection(scene, from, candidates))
       const id = newId()
       if (apply((s) => addPipe(s, { id, from, to: pick.end }))) {
         setSource(null)
