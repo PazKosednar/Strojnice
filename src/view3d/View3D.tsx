@@ -1,12 +1,16 @@
-import { Edges, OrbitControls } from '@react-three/drei'
+import { OrbitControls } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { useMemo, useState } from 'react'
 import { equipmentTo3d } from '../core/equipmentTo3d'
-import { sceneToBoxes } from '../core/sceneToBoxes'
+import { pipesTo3d } from '../core/pipesTo3d'
+import { sceneToBoxes, wallBaseBoxes } from '../core/sceneToBoxes'
+import { WALL_BASE_HEIGHT, wallFacings } from '../core/wallVisibility'
 import { equipmentWithConflicts, sceneWarnings } from '../core/sceneWarnings'
 import { selectScene, useEditorStore } from '../stores/editorStore'
 import { CameraRig } from './CameraRig'
 import { Equipment3D } from './Equipment3D'
+import { Pipes3D } from './Pipes3D'
+import { Walls3D } from './Walls3D'
 
 const COLORS = {
   wall: '#d9d6cf',
@@ -25,6 +29,12 @@ export default function View3D() {
   const boxes = useMemo(() => sceneToBoxes(scene), [scene])
   const equipment = useMemo(() => equipmentTo3d(scene), [scene])
   const conflicts = useMemo(() => equipmentWithConflicts(sceneWarnings(scene)), [scene])
+  const pipes = useMemo(() => pipesTo3d(scene), [scene])
+  const wallBoxes = useMemo(() => boxes.filter((b) => b.kind === 'wall'), [boxes])
+  const baseBoxes = useMemo(() => wallBaseBoxes(boxes, WALL_BASE_HEIGHT), [boxes])
+  const facings = useMemo(() => wallFacings(scene), [scene])
+  const hiddenSystems = useEditorStore((s) => s.hiddenSystems)
+  const wallViewMode = useEditorStore((s) => s.wallViewMode)
   const [resetToken, setResetToken] = useState(0)
 
   return (
@@ -39,25 +49,33 @@ export default function View3D() {
         <hemisphereLight args={['#ffffff', '#8d8d8d', 1.2]} />
         <directionalLight position={[6, 12, 8]} intensity={1.6} />
         <directionalLight position={[-8, 6, -4]} intensity={0.5} />
-        {boxes.map((box) => {
-          const selected =
-            box.kind === 'wall' && selection?.kind === 'wall' && selection.id === box.elementId
-          const color =
-            box.kind === 'floor' ? COLORS.floor : selected ? COLORS.wallSelected : COLORS.wall
-          return (
+        {boxes
+          .filter((box) => box.kind === 'floor')
+          .map((box) => (
             <mesh key={box.key} position={box.center} rotation-y={box.rotationY}>
               <boxGeometry args={box.size} />
-              <meshStandardMaterial color={color} roughness={0.9} />
-              {box.kind === 'wall' && <Edges color={COLORS.edges} />}
+              <meshStandardMaterial color={COLORS.floor} roughness={0.9} />
             </mesh>
-          )
-        })}
+          ))}
+        <Walls3D
+          boxes={wallBoxes}
+          baseBoxes={baseBoxes}
+          facings={facings}
+          mode={wallViewMode}
+          selectedWallId={selection?.kind === 'wall' ? selection.id : null}
+        />
+        <Pipes3D
+          pipes={pipes}
+          hiddenSystems={hiddenSystems}
+          selectedPipeId={selection?.kind === 'pipe' ? selection.id : null}
+        />
         {equipment.map((item) => (
           <Equipment3D
             key={item.id}
             item={item}
             selected={selection?.kind === 'equipment' && selection.id === item.id}
             conflict={conflicts.has(item.id)}
+            hiddenSystems={hiddenSystems}
           />
         ))}
         <OrbitControls makeDefault enableDamping={false} />

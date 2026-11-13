@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createRectangularRoom } from './rectangularRoom'
 import { createEmptyScene, type Opening, type Scene, type Wall } from './scene'
-import { boxesBounds, FLOOR_THICKNESS, sceneToBoxes } from './sceneToBoxes'
+import { boxesBounds, FLOOR_THICKNESS, sceneToBoxes, wallBaseBoxes } from './sceneToBoxes'
 
 const freeWall: Wall = {
   id: 'w',
@@ -122,5 +122,29 @@ describe('boxesBounds radius', () => {
       { key: 'a', kind: 'wall', elementId: 'a', center: [0, 0, 0], size: [2, 2, 2], rotationY: 0 },
     ])!
     expect(bounds.radius).toBeCloseTo(Math.sqrt(3))
+  })
+})
+
+describe('wallBaseBoxes', () => {
+  it('cuts the floor-standing wall pieces to the base height', () => {
+    const boxes = sceneToBoxes(sceneWith([freeWall], [window1]))
+    const base = wallBaseBoxes(boxes, 200)
+    // Left, below-sill and right pieces stand on the floor; the lintel does not.
+    expect(base.map((b) => +b.size[1].toFixed(3))).toEqual([0.2, 0.2, 0.2])
+    expect(base.every((b) => Math.abs(b.center[1] - 0.1) < 1e-9)).toBe(true)
+    expect(base.every((b) => b.key.endsWith(':base') && b.elementId === 'w')).toBe(true)
+  })
+
+  it('keeps pieces lower than the base height as they are', () => {
+    const door = {
+      ...window1,
+      type: 'door' as const,
+      offset: 0,
+      width: 900,
+      height: 2500,
+      sillHeight: 0,
+    }
+    const base = wallBaseBoxes(sceneToBoxes(sceneWith([freeWall], [door])), 200)
+    expect(base).toHaveLength(1)
   })
 })

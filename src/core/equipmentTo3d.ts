@@ -8,6 +8,7 @@ import type { Vec3 } from './sceneToBoxes'
  */
 export interface Port3d {
   key: string
+  systemId: string
   color: string
   /** Centre of the stub (m). */
   center: Vec3
@@ -57,6 +58,7 @@ export function equipmentTo3d(scene: Scene): Equipment3d[] {
       const half = PORT_STUB_LENGTH / 2
       return {
         key: `${item.id}:${port.id}`,
+        systemId: port.systemId,
         color: colors.get(port.systemId) ?? UNKNOWN_SYSTEM_COLOR,
         center: [base[0] + dir[0] * half, base[1] + dir[1] * half, base[2] + dir[2] * half],
         direction: dir,

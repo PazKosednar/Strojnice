@@ -33,10 +33,11 @@ interface Props {
   item: Equipment3d
   selected: boolean
   conflict: boolean
+  hiddenSystems: readonly string[]
 }
 
 /** One placed equipment item: body in true dimensions, port stubs and the tag label. */
-export function Equipment3D({ item, selected, conflict }: Props) {
+export function Equipment3D({ item, selected, conflict, hiddenSystems }: Props) {
   const color = conflict ? COLORS.conflict : selected ? COLORS.selected : COLORS.body
   return (
     <group>
@@ -49,9 +50,11 @@ export function Equipment3D({ item, selected, conflict }: Props) {
         <meshStandardMaterial color={color} roughness={0.75} />
         <Edges color={COLORS.edges} />
       </mesh>
-      {item.ports.map((port) => (
-        <PortStub key={port.key} port={port} />
-      ))}
+      {item.ports
+        .filter((port) => !hiddenSystems.includes(port.systemId))
+        .map((port) => (
+          <PortStub key={port.key} port={port} />
+        ))}
       <TagLabel text={item.tag} position={item.labelPosition} />
     </group>
   )

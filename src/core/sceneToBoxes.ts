@@ -123,3 +123,22 @@ export function boxesBounds(boxes: readonly Box3d[]): Bounds3d | null {
   const radius = Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]) / 2
   return { center, radius }
 }
+
+/**
+ * Low base of the walls for the clean 3D view: every wall piece that stands on the floor,
+ * cut to `heightMm` (pieces above openings and below-sill pieces higher up are left out).
+ */
+export function wallBaseBoxes(boxes: readonly Box3d[], heightMm: number): Box3d[] {
+  const h = heightMm * MM
+  return boxes
+    .filter((b) => b.kind === 'wall' && b.center[1] - b.size[1] / 2 < 1e-6)
+    .map((b) => {
+      const height = Math.min(b.size[1], h)
+      return {
+        ...b,
+        key: `${b.key}:base`,
+        center: [b.center[0], height / 2, b.center[2]] as Vec3,
+        size: [b.size[0], height, b.size[2]] as Vec3,
+      }
+    })
+}
