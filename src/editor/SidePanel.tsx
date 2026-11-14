@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import type { PanelTab } from '../stores/editorStore'
 import { CatalogPanel } from '../catalog/CatalogPanel'
 import { sceneWarnings } from '../core/sceneWarnings'
@@ -17,13 +17,12 @@ export function SidePanel() {
   const tab = useEditorStore((s) => s.panelTab)
   const setTab = useEditorStore((s) => s.setPanelTab)
 
-  // Selecting an element (in the plan or from a warning) shows its properties.
+  // Selecting an element (in the plan or from a warning) shows its properties. The tab
+  // lives in the store, so it is switched after rendering, not during it.
   const selectedId = selection?.id ?? null
-  const [shownId, setShownId] = useState(selectedId)
-  if (shownId !== selectedId) {
-    setShownId(selectedId)
+  useEffect(() => {
     if (selectedId) setTab('properties')
-  }
+  }, [selectedId, setTab])
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'properties', label: 'Lastnosti' },

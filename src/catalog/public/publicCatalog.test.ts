@@ -32,19 +32,37 @@ describe('public catalogue', () => {
   )
 
   it.each(PUBLIC_PRODUCTS.map((p) => [p.type.name, p] as const))(
-    '%s has ports within its extents, with an outer diameter',
+    '%s has ports within its extents (the model, when there is one), with an outer diameter',
     (_name, { type }) => {
       const { shape } = type
-      const [halfW, halfD] =
-        shape.kind === 'box'
-          ? [shape.width / 2, shape.depth / 2]
-          : [shape.diameter / 2, shape.diameter / 2]
+      // Connection nozzles may stick out of the casing, so a model's extents count when
+      // there is one (model x = local x, model z towards the viewer = local -y, model y up).
+      const model = type.model
+      const local =
+        model && model.rotation === 0
+          ? (() => {
+              const cx = (model.bounds.min.x + model.bounds.max.x) / 2
+              const cz = (model.bounds.min.z + model.bounds.max.z) / 2
+              return {
+                x: [model.bounds.min.x - cx, model.bounds.max.x - cx],
+                y: [-(model.bounds.max.z - cz), -(model.bounds.min.z - cz)],
+                z: [0, model.bounds.max.y - model.bounds.min.y],
+              }
+            })()
+          : (() => {
+              const [halfW, halfD] =
+                shape.kind === 'box'
+                  ? [shape.width / 2, shape.depth / 2]
+                  : [shape.diameter / 2, shape.diameter / 2]
+              return { x: [-halfW, halfW], y: [-halfD, halfD], z: [0, shape.height] }
+            })()
       for (const port of type.ports) {
-        const { x, y, z } = port.position
-        expect(Math.abs(x), `${port.id}.x`).toBeLessThanOrEqual(halfW)
-        expect(Math.abs(y), `${port.id}.y`).toBeLessThanOrEqual(halfD)
-        expect(z, `${port.id}.z`).toBeGreaterThanOrEqual(0)
-        expect(z, `${port.id}.z`).toBeLessThanOrEqual(shape.height)
+        for (const axis of ['x', 'y', 'z'] as const) {
+          const v = port.position[axis]
+          // 1 mm for the rounding of measured extents.
+          expect(v, `${port.id}.${axis}`).toBeGreaterThanOrEqual(local[axis][0]! - 1)
+          expect(v, `${port.id}.${axis}`).toBeLessThanOrEqual(local[axis][1]! + 1)
+        }
         expect(port.outerDiameter, `${port.id}.outerDiameter`).toBeGreaterThan(0)
       }
     },
@@ -59,13 +77,18 @@ describe('public catalogue', () => {
 
   it('Viessmann dimensions match the model extents', () => {
     for (const { type } of PUBLIC_PRODUCTS.filter((p) => p.manufacturer === 'Viessmann')) {
-      if (type.shape.kind !== 'box' || !type.model) throw new Error(type.name)
+      if (!type.model) throw new Error(type.name)
       const size = modelDimensions(type.model.bounds, type.model.rotation)
-      expect(size).toEqual({
-        width: type.shape.width,
-        depth: type.shape.depth,
-        height: type.shape.height,
-      })
+      if (type.shape.kind === 'box') {
+        expect(size).toEqual({
+          width: type.shape.width,
+          depth: type.shape.depth,
+          height: type.shape.height,
+        })
+      } else {
+        // Cylinder: diameter = model width (the depth includes the connection nozzles).
+        expect([type.shape.diameter, type.shape.height]).toEqual([size.width, size.height])
+      }
     }
   })
 })
@@ -104,5 +127,43 @@ describe('Vitocal 250-A connection keys', () => {
         'viessmann-vitocal-250-a-odu-250-a:B:vitocal-250-a-primary-return:in',
       ].sort(),
     )
+  })
+})
+
+describe('Viessmann Vitocell cylinders', () => {
+  const type = (id: string) => PUBLIC_PRODUCTS.find((p) => p.type.id === id)!.type
+  const ports = (id: string) =>
+    type(id).ports.map((p) => [p.id, p.systemId, p.size, p.outerDiameter, p.direction])
+
+  it('have the ports of the port files, without H_EL, H_E and the lower H_AB', () => {
+    expect(ports('viessmann-vitocell-100-v-cvwb-300')).toEqual([
+      ['H_AB', 'dhw', 'DN25 (Ø33.7)', 34, '+y'],
+      ['H_EZ', 'dhw', 'DN20 (Ø26.9)', 27, '+y'],
+      ['H_VWE', 'supply', 'DN32 (Ø42.4)', 42, '+y'],
+      ['H_RWE', 'return', 'DN32 (Ø42.4)', 42, '+y'],
+      ['H_EK', 'cold', 'DN25 (Ø33.7)', 34, '+y'],
+    ])
+    expect(type('viessmann-vitocell-100-e-svwa-200').ports.map((p) => p.id)).toEqual([
+      'H_VWE-1078',
+      'H_VWE-978',
+      'H_RWE-359',
+      'H_RWE-259',
+    ])
+    for (const id of ['viessmann-vitocell-100-w-cvwa-390', 'viessmann-vitocell-100-w-cvwa-500']) {
+      const ab = type(id).ports.filter((p) => p.id.startsWith('H_AB'))
+      expect(ab).toHaveLength(1)
+      expect(ab[0]!.position.z).toBeGreaterThan(572)
+    }
+    expect(type('viessmann-vitocell-100-e-svpa-46')).toMatchObject({
+      tagPrefix: 'BUF',
+      mounting: 'wall',
+      shape: { kind: 'box', width: 450, depth: 382, height: 925 },
+    })
+  })
+
+  it('have no connection keys yet (to be confirmed)', () => {
+    const vitocell = PUBLIC_PRODUCTS.filter((p) => p.type.id.includes('vitocell'))
+    expect(vitocell).toHaveLength(5)
+    expect(vitocell.flatMap((p) => p.type.ports).some((p) => p.connectionKey)).toBe(false)
   })
 })
